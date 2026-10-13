@@ -246,6 +246,9 @@ then commit git commit -am "changed master"
 
 
 UNDOING IN GITHUB
+git reset 
+to undo changes
+
 
 
 
