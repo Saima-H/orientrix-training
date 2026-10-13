@@ -1,4 +1,5 @@
-DAY-01(GITHUB)
+# DAY-01(GITHUB)
+{#--> for main header)
 Git-vcs(version control system to track changes in code)
 git is a tool ,github is a website where you host all your git repositories
 Commands:(note all commands are always in lower case)
@@ -8,6 +9,8 @@ add: track your files and changes in git(bcoz we might delete or update stuffs).
 commit: save your files in Git.
 push: upload git commands to a remote repo like github
 pull: download changes from remote repo to local machine, opposite of push
+
+Basically README.md is a file that describes the entire project md--> means mark down(mark down is an easy way to format these texts)
 
 
 
