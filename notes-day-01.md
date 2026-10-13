@@ -233,7 +233,19 @@ ways to deal with merge conflict:
 in vs code
 <img width="640" height="335" alt="image" src="https://github.com/user-attachments/assets/409dc76f-4cdc-4b4f-8d2a-7f9b516764a3" />
 
+<img width="639" height="334" alt="image" src="https://github.com/user-attachments/assets/eab90ec4-c964-4f3d-a779-3fdef3d01563" />
 
+remove the highlighted lines according to ur need so i wanted in this order so i have kept it this way
+
+then commit git commit -am "changed master"
+
+
+
+
+
+
+
+UNDOING IN GITHUB
 
 
 
