@@ -174,7 +174,67 @@ git checkout -b feature (git checkout is used to switch between branches but , g
 
 
 
-only made changes to feature branc
+only made changes to feature branch 
+<img width="318" height="302" alt="image" src="https://github.com/user-attachments/assets/177cde5a-22be-4aa4-87dc-50f9b0e0d385" />
+
+git diff branch name (will show differences as in the image)
+git merge branch name (it will merge the changes)
+
+now we are at the feature branch nd we want to push these changes then in tht case u cant just write git push coz 
+<img width="316" height="338" alt="image" src="https://github.com/user-attachments/assets/b30ac21a-f6a3-4089-93cd-22707111d379" />
+ 
+u have to write this git push --set-upstream origin feature-readme-instructions
+by the way
+--set-upstream is long form of -u
+then u will get suggestion create pull request
+WHATS A PULL REQUEST: Request to have ur code pulled into another branch
+ex: from feature bramch to main branch
+ONCE WE HAVE MADE A PR ANYONE CAN REVIEW THE CODE COMMENT ON IT TO MAKE CHANGES 
+AFTER U HAVE MADE A PR U CAN ALSO UPDATE THE CODE JUZ BY MAKING ADDITIONAL COMMITS AND PUSHING THEM UPTO GITHUB AS LONG AS ITS ON THE SAME BRANCH U R MAKING PR WITH
+ONCE THE PR IS MERGED U WILL GENERALLY DELETE THE FEATURE BRANCH ND GO BACK TO THE MASTER BRANCH.
+
+PULL REQUEST : TWO WAYS:1.THRU LINK USING TERMINAL
+2.USING GITHUB INTERFACE
+
+USING GITHUB INTERFACE
+<img width="313" height="332" alt="image" src="https://github.com/user-attachments/assets/369c0761-bffa-4279-ab11-66b77e6b6723" />
+
+<img width="317" height="336" alt="image" src="https://github.com/user-attachments/assets/72abb0da-9c84-4668-a113-60cc03f72a34" />
+
+<img width="314" height="298" alt="image" src="https://github.com/user-attachments/assets/d92fc9cd-0fb3-4c05-803c-64d113e71145" />
+
+once pull request is over 
+since u hadnt merged locally theres a chance u still might be seeing not updated code then in tht case 
+so to get all the changes u give comand 
+git pull
+
+once all changes from feature branch has been pulled u can delete it the feature branch 
+ git branch -d feature-readme-instructions
+
+ MERGE CONFLICTS:
+ When multiple ppl are uopdating same files so git doesnt know which code we want to keep or which one is redundant etc
+ so we have to mannually do tht
+ git commit -am "ur msg" (a-->add and m--> msg  this is used for an already committed file which was juz modified 
+
+ <img width="314" height="182" alt="image" src="https://github.com/user-attachments/assets/b777c898-8182-4eb9-8d0e-813915f67b8a" />
+
+
+
+
+feature branch( named quick-test)  has hello world 
+main branch has hello there
+so merge conflict has occured
+
+ways to deal with merge conflict:
+1.github interface
+2.terminal
+3.directly in text editor such as vscode
+
+in vs code
+<img width="640" height="335" alt="image" src="https://github.com/user-attachments/assets/409dc76f-4cdc-4b4f-8d2a-7f9b516764a3" />
+
+
+
 
 
 
