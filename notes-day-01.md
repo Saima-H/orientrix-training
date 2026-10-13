@@ -144,6 +144,20 @@ refer the image
 COMINGGGGGGGGGGGG BACKKKKKKKKKKKKKKKKKKKKKK!
 git push -u origin master(here u stands for upstream , use of this is basically to be able to juz ryt git push nd ur work shld be done , no need to write origin master and all)
 
+<img width="399" height="359" alt="image" src="https://github.com/user-attachments/assets/1770bb5b-dff4-467f-9d9c-75eb338265dd" />
+
+
+GIT BRANCHING 
+
+<img width="281" height="163" alt="image" src="https://github.com/user-attachments/assets/b42d6ed1-13c0-409d-9ae0-f5551b879306" />
+
+MASTER/MAIN BRANCH-THE ACTUAL MAIN BRANCH
+FEATURE BRANCH- CHNAGES MADE HERE WONT EFFECT MAIN BRANCH UNTIL MERGED
+HOT FIX BRANCH-USED TO FIX BUGS IN 1 COMMIT 
+
+
+
+
 
 
 
