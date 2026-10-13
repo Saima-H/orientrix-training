@@ -155,6 +155,26 @@ MASTER/MAIN BRANCH-THE ACTUAL MAIN BRANCH
 FEATURE BRANCH- CHNAGES MADE HERE WONT EFFECT MAIN BRANCH UNTIL MERGED
 HOT FIX BRANCH-USED TO FIX BUGS IN 1 COMMIT 
 
+git branch (gives info about the branch) 
+*main -->* symbol shows u r currently on tht branch 
+
+ERORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+<img width="298" height="175" alt="image" src="https://github.com/user-attachments/assets/268f38f0-e8fa-4a02-9621-a94fb21334da" />
+
+
+The `git branch` command worked perfectly! It shows you are on the `main` branch (indicated by the green `* main`).
+
+The error happened because you typed `q`. 
+
+You were thinking of `q` (for **quit**), which is a command used inside programs like `less` or `vim` to exit out of them. But `git branch` just prints the list and immediately finishes—it doesn't put you inside a program that needs quitting. So the terminal didn't recognize `q` as a valid command.
+
+**You don't need to do anything to fix it.** You are right back at your normal prompt (`PS C:\Users\samh7\projects\git_practice\demo-repo>`), ready for your next command. Everything is fine!
+
+git checkout -b feature (git checkout is used to switch between branches but , git checkout -b branchname is used to create new branch)
+
+
+
+only made changes to feature branc
 
 
 
