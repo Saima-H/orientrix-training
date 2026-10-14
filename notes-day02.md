@@ -44,6 +44,9 @@ The important thing about this architecture is tht its **STATELESS**
 which means tht the two parties dont need to store any info about each other and every req-response cycle is independent from all other communication.
 
 
+# API'S FOR BEGINNERS
+
+
 
 
 
