@@ -299,6 +299,21 @@ HTTP is the **vehicle**. REST is the **traffic law**. You need both to have a sm
 
 
 
+REST API sits on top of web tech like a little hat 
+
+<img width="466" height="221" alt="image" src="https://github.com/user-attachments/assets/d8a53d61-8636-4844-9d47-cce74d2dc6ac" />
+**CONSTRAINT 1: CLIENT-SERVER ARCH**
+**CONSTRAINT 2:STATELESS** SINCE WE ARE USING HTTP PROTOCOL ITS  STATELESS
+
+SO basically when we send a request from client we are basically requesting something , whats tht something ????????????????????????????????????????
+
+tht something is RESOURCE 
+(7 CROREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE!!!! LOL)
+SO THIS RESOURCE IS THE 'R' IN URI,URL 
+resource is a reference to an object which could be anything in the real lyf
+
+
+
 
 
 
