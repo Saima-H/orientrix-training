@@ -125,13 +125,13 @@ In the image you provided, `'yeet!'.toUpperCase()`:
 
   **Yes, exactly.** 
 
-One single API (like `toUpperCase()`) works on any OS.
+# One single API (like `toUpperCase()`) works on any OS.
 
 **But remember:** It only works because the developer wrote separate code for each OS **behind the scenes**. 
 
 You see **one button**. They built **three different machines** under it.
 
-Remote API :
+# Remote API :
 A **Remote API** is an API that lives on a **different computer** (a server), not on your own device. You access it over the internet.
 
 **Simple Analogy:**
@@ -151,6 +151,20 @@ A **Remote API** is an API that lives on a **different computer** (a server), no
 3. It sends back a **response** (usually data like JSON).
 
 **Key point:** You never see the code. You just send a request and get an answer. Same idea as a local API, but the work happens far away.
+computational power of remote api is insane
+ex:google translate in rela time translates stuff
+
+# REST:The architectural style 
+its lyk how we use word xerox for photocopy 
+REST for api
+
+# When api's embrace the style and constraints of REST they are said to be RESTful
+<img width="236" height="134" alt="image" src="https://github.com/user-attachments/assets/b9a3732e-2bf9-4f37-bc41-1dec390321a3" />
+
+
+
+
+
 
 
 
