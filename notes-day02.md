@@ -214,6 +214,101 @@ The server receives the request and sends back the response to client
 The most important part of the response is the body. for a webpage tht contains HTML(Hyper text markup lang) this forms the ht part of http
 
 # HTTP-Its a stateless protocol
+There are some pieces of important info included in request and response
+# ways to pass info about request 
+**1.query string parameters in url's(stuff after question mark)**
+
+
+
+**2.THRU SPECIFIC KEY-VALUE PAIRS CALLED HEADERS**
+1.Both req and response have headers and they are used to communicate whts wanted as well as wht has been said back.
+2.some req headers allow u to write info about the content u expect back , u can also specify u want to access a page if it was changed this allows cahing
+3.u can embed authentication info in each req using a header , this way u keep client logged in acrosss requests
+
+
+
+response also contains headers
+important one is status code: helps to convey wht happens on server side
+
+# WHAT EXACTLY IS THE RELATION BETWEEN REST AND HTTP (YE RISHTA KYA KEHLATA HAI)
+Here is your pizza analogy mapped exactly to the tech world:
+
+### 🍕 The Analogy
+
+**HTTP (The Waiter)**
+The waiter’s only job is to carry food from the kitchen to your table. He doesn't care if you order a pizza, a salad, or a rock. He just delivers whatever you ask for. 
+
+-   **Tech:** HTTP is just the protocol (the delivery system) that moves data (JSON, HTML, images) between your browser and a server. It doesn't care what the data is.
+
+**REST (The Restaurant Manager)**
+The manager writes the menu rules. The manager says: "We don't just throw food at customers. We serve pizza on a plate, we use a specific section of the menu for drinks, and we use the right utensils." 
+
+-   **Tech:** REST is a set of architectural rules for designing the API. It says: "Don't use verbs in URLs. Use nouns. Use the right HTTP methods for the right actions."
+
+---
+
+### 🍕 The Tech Part (With Your Analogy)
+
+**1. The Bad Restaurant (HTTP without REST)**
+-   **You say:** "Hey waiter, go get me the pizza and remove the pepperoni."
+-   **Tech:** `GET /getPizza?remove=pepperoni`
+-   **Why it's bad:** You are using the word "get" in the URL. The waiter (HTTP) delivers it, but the menu is messy.
+
+**2. The Good Restaurant (HTTP + REST)**
+-   **You say:** "Hey waiter, I want the pepperoni pizza, but I want to modify it."
+-   **Tech:** `PUT /pizzas/pepperoni` (with new data)
+-   **Why it's good:** The URL is just a noun (`/pizzas/pepperoni`). The action is the HTTP method (`PUT`). This follows REST rules.
+
+---
+
+### 🍕 The "Plate vs. Tray" Rule
+
+You said: *"HTTP just focuses on serving pizza but REST says serve it on a plate not tray."*
+
+**Tech Translation:**
+
+-   **HTTP says:** "I can carry your data using `GET`, `POST`, `PUT`, `DELETE`."
+-   **REST says:** "Okay, but here are the rules for using those:
+    -   Use `GET` to **read** data (Don't use it to delete!).
+    -   Use `POST` to **create** new data.
+    -   Use `PUT` to **update** data.
+    -   Use `DELETE` to **remove** data.
+    -   Keep your URLs clean (nouns, not verbs)."
+
+---
+
+### 🍕 Summary Table
+
+| Analogy | Tech | Role |
+| :--- | :--- | :--- |
+| **Waiter** | **HTTP** | Delivers the order (data) back and forth. |
+| **Menu Rules** | **REST** | Tells you how to order and how to name things. |
+| **"Plate not Tray"** | **RESTful URL Design** | `GET /users/5` instead of `GET /getUser?id=5` |
+| **The Pizza** | **Data (JSON)** | The actual thing being delivered. |
+
+**Bottom line:** 
+HTTP is the **vehicle**. REST is the **traffic law**. You need both to have a smooth ride. 🍕🚗
+
+
+# REST(REPRESENTATIONAL STATE TRANSFER) , API'S THAT MEET REST ARCHITECTURE ARE CALLED RESTful. CONSTRAINTS THT DEFINE THEM:
+
+
+<img width="290" height="289" alt="image" src="https://github.com/user-attachments/assets/bf09f3e3-02f3-4d77-b49e-90030557d204" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
