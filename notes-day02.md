@@ -203,6 +203,24 @@ That works as a basic idea. But a full URL is like a **full postal address**, no
 
 **Bottom line:** You understood the concept. Just remember a URL needs the "how to get there" part (`https://`).
 
+<img width="521" height="315" alt="image" src="https://github.com/user-attachments/assets/c347fbd4-073d-450d-82b0-2a8b1b5d9b35" />
+
+URL has a scheme portion http
+http specifies the uri along with a htttp verb in this case its GET
+
+<img width="251" height="91" alt="image" src="https://github.com/user-attachments/assets/58bc5e08-59bd-4316-90cd-ec10699164cd" />
+
+The server receives the request and sends back the response to client
+The most important part of the response is the body. for a webpage tht contains HTML(Hyper text markup lang) this forms the ht part of http
+
+# HTTP-Its a stateless protocol
+
+
+
+
+
+
+
 
 
 
