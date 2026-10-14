@@ -45,6 +45,13 @@ which means tht the two parties dont need to store any info about each other and
 
 
 # API'S FOR BEGINNERS
+Actually everything tht we use has an iterface we dont understand its complete working internally but we know how to use it ryt internally these buttons for example will interact with the api which will do the magic 
+
+Helps in abstraction of implementation 
+Most likely when the word is used its used to refer web based api
+
+
+
 
 
 
