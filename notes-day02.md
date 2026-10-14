@@ -163,12 +163,45 @@ REST for api
 
 
 
+**URI** = The full address (ID card).
+**URL** = The location (Home address).
+
+**Simple way to remember:**
+- **URI** tells you **what it is** (name/ID).
+- **URL** tells you **where it is** and **how to get it**.
 
 
+**Perfect example!** You got it. ✅
 
+- **URI:** `saima` → Just identifies **who** (a name/ID).
+- **URL:** `hyd` → Tells you **where** she is (Hyderabad).
 
+**But wait — one small fix:**
 
+A **URL** usually needs a bit more to be a real "location." Like:
 
+- **URI:** `saima`
+- **URL:** `https://india.com/hyderabad/saima`
+
+**Why?** Because a URL must tell you:
+1. **How** to get there → `https://`
+2. **Where** it is → `india.com/hyderabad/`
+3. **What** it is → `saima`
+
+**Your version simplified:**
+- **URI** = Saima (the person)
+- **URL** = Hyderabad (the place)
+
+That works as a basic idea. But a full URL is like a **full postal address**, not just the city.
+
+**So:**
+
+| | Your Example | Full Version |
+| :--- | :--- | :--- |
+| **URI** | `saima` | `saima` |
+| **URL** | `hyd` | `https://india.com/hyderabad/saima` |
+
+**Bottom line:** You understood the concept. Just remember a URL needs the "how to get there" part (`https://`).
 
 
 
