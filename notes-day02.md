@@ -290,6 +290,8 @@ You said: *"HTTP just focuses on serving pizza but REST says serve it on a plate
 HTTP is the **vehicle**. REST is the **traffic law**. You need both to have a smooth ride. 🍕🚗
 
 
+**REST USES HTTP IN IT LIKE RESTFUL APIS USE HTTP METHODS TO DO THEIR WORK**
+
 # REST(REPRESENTATIONAL STATE TRANSFER) , API'S THAT MEET REST ARCHITECTURE ARE CALLED RESTful. CONSTRAINTS THT DEFINE THEM:
 
 
