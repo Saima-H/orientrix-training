@@ -230,7 +230,7 @@ There are some pieces of important info included in request and response
 response also contains headers
 important one is status code: helps to convey wht happens on server side
 
-# WHAT EXACTLY IS THE RELATION BETWEEN REST AND HTTP (YE RISHTA KYA KEHLATA HAI)
+# WHAT EXACTLY IS THE RELATION BETWEEN REST AND HTTP
 Here is your pizza analogy mapped exactly to the tech world:
 
 ### 🍕 The Analogy
