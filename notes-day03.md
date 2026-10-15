@@ -101,6 +101,89 @@ sms_internal_alerts
 # get all msgs u have sent
 curl.exe -X GET "https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID/Messages.json"-u YOUR_ACCOUNT_SID:YOUR_AUTH_TOKEN
 
+OUTPUT:
+<img width="635" height="317" alt="image" src="https://github.com/user-attachments/assets/30b4b43a-bb7c-4e1e-8b51-45cbda98057e" />
+
+7 croreeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+**extra**
+Ah, that makes sense! The tutorial used `| jq` to **pretty-print the JSON response** so it's readable instead of one giant blob.
+
+### What `| jq` does
+`jq` is a command-line JSON processor. When you pipe curl's raw JSON output into it, `jq` reformats it with colors and indentation.
+
+**Without jq:**
+```
+{"sid":"SMxxxx","date_created":"2024-01-15T10:30:00Z","status":"queued",...}
+```
+
+**With jq:**
+```json
+{
+  "sid": "SMxxxx",
+  "date_created": "2024-01-15T10:30:00Z",
+  "status": "queued",
+  ...
+}
+```
+
+### ⚠️ You probably don't have `jq` installed on Windows
+
+`jq` is a **separate program** you have to install — it doesn't come with Windows by default. If you just append `| jq` to your command right now, PowerShell will throw an error like `'jq' is not recognized`.
+
+### Your options:
+
+**Option 1: Skip jq entirely** — The message will still send. You'll just get ugly JSON output. That's fine.
+
+**Option 2: Install jq** (if you want the pretty output):
+- **winget:** `winget install jqlang.jq`
+- **Chocolatey:** `choco install jq`
+- **Scoop:** `scoop install jq`
+- Or download from https://jqlang.github.io/jq/download/
+
+After installing, **restart PowerShell** so it picks up the new PATH.
+
+**Option 3: Use PowerShell's built-in pretty-printer** — pipe to `ConvertFrom-Json` and format it:
+
+```powershell
+curl.exe -X POST "https://api.twilio.com/..." `
+--data-urlencode "From=..." `
+--data-urlencode "Body=sms_2fa" `
+--data-urlencode "To=..." `
+-u YOUR_ACCOUNT_SID:YOUR_AUTH_TOKEN | ConvertFrom-Json | Format-List
+```
+
+This gives you the same readable output without installing anything extra.
+
+### ✅ Your full command with jq (if installed)
+
+```powershell
+curl.exe -X POST "https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID/Messages.json" `
+--data-urlencode "From=YOUR_TWILIO_TRIAL_NUMBER" `
+--data-urlencode "Body=sms_2fa" `
+--data-urlencode "To=+917671986500" `
+-u YOUR_ACCOUNT_SID:YOUR_AUTH_TOKEN | jq
+```
+
+### 💡 Small tip
+When running in PowerShell with `curl.exe` and piping to `jq`, you might occasionally hit issues with how PowerShell handles the pipe. If `| jq` gives you a weird error, wrap the curl part in parentheses:
+
+```powershell
+(curl.exe ... ) | jq
+```
+
+That forces PowerShell to fully evaluate the curl command first, then pipe the result.
+
+Bottom line: `| jq` is purely cosmetic — it doesn't affect whether your SMS sends. Try your command without it first to confirm everything works, then add `jq` later if you want prettier output.
+
+
+# RESTful fox installation(in terminal)
+winget install --id=flawiddsouza.Restfox -e
+
+
+
+
 
 
 
