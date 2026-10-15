@@ -184,6 +184,8 @@ winget install --id=flawiddsouza.Restfox -e
 
 now open restful fox
 on the left side right click make a new folder called twillio
+inside create a folder for incoming messages
+now refer message resource and go to list all messages
 
 
 
