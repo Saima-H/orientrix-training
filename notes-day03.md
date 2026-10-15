@@ -177,6 +177,47 @@ That forces PowerShell to fully evaluate the curl command first, then pipe the r
 
 Bottom line: `| jq` is purely cosmetic — it doesn't affect whether your SMS sends. Try your command without it first to confirm everything works, then add `jq` later if you want prettier output.
 
+**cURL** (pronounced "curl") is a command-line tool that lets you send requests to servers (like APIs) directly from your terminal. 
+
+### 📖 The Full Form
+**cURL** stands for **"Client URL"**. 
+(It's sometimes written as `cURL` to distinguish it from the English word "curl", and the `c` stands for "Client".)
+
+### 🤔 What does it actually do?
+Think of it as a **browser that lives in your terminal**. 
+When you type a website address into Chrome or Firefox, the browser sends a request to a server and shows you the webpage. 
+
+`cURL` does the exact same thing, but instead of showing you a pretty webpage, it shows you the **raw data** (like JSON) that the server sends back. 
+
+It can also do much more than a browser:
+*   Send **POST** requests (to submit data)
+*   Send **custom headers** (like API keys or auth tokens)
+*   Upload files
+*   Interact with APIs that don't have a web interface
+
+### 💻 What it looks like
+The command you were trying to run earlier *is* a cURL command:
+
+```bash
+curl -X POST "https://api.twilio.com/..." -u YOUR_SID:YOUR_TOKEN
+```
+
+*   `curl` = the program
+*   `-X POST` = the type of request (send data)
+*   `"https://..."` = where to send it
+*   `-u` = the username/password (in your case, SID and Auth Token)
+
+### 🧩 Why your PowerShell command failed earlier
+Windows PowerShell has a built-in alias also called `curl`, but it's **not** the real cURL — it's a shortcut for `Invoke-WebRequest`. That's why you had to type **`curl.exe`** to force PowerShell to use the actual cURL program.
+
+### 🆚 How it relates to Restfox
+You can think of **Restfox as a graphical version of cURL**. 
+
+*   **cURL** → You type everything in the terminal.
+*   **Restfox** → You click buttons, fill in boxes (URL, headers, body), and click "Send". 
+
+Under the hood, Restfox is basically generating a cURL command for you and running it! That's why Restfox has a **"cURL Import"** option — it lets you paste a cURL command and it automatically fills in all the boxes for you.
+
 
 # RESTful fox installation(in terminal)
 winget install --id=flawiddsouza.Restfox -e
