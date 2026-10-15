@@ -182,6 +182,8 @@ Bottom line: `| jq` is purely cosmetic — it doesn't affect whether your SMS se
 winget install --id=flawiddsouza.Restfox -e
 
 
+now open restful fox
+on the left side right click make a new folder called twillio
 
 
 
