@@ -279,7 +279,7 @@ flowchart TD
     ZERO --> ZERO_FIX[Guard with if y != 0]
 ```
 
-> **Note:** If your GitHub README does not render Mermaid, replace the fenced code blocks above with the plain ASCII flowchart below.
+> .
 
 ### ASCII Flowchart (fallback)
 
