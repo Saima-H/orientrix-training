@@ -259,7 +259,13 @@ to,from, body:sms_2fa or any body accepted under trial
 <img width="640" height="337" alt="image" src="https://github.com/user-attachments/assets/a89a4ef3-8fec-4637-b4d5-be42ba8d1daa" />
 
 
+# SET UP THE ENVIRONMENT VARIABLE SO THAT U DONT HAVE TO MANNUALLY COPY PASTE ALL TYM
 
+<img width="476" height="307" alt="image" src="https://github.com/user-attachments/assets/72e311e9-34bd-4e07-adc2-fc4a295588e8" />
+
+
+
+<img width="640" height="334" alt="image" src="https://github.com/user-attachments/assets/ac0feca0-1580-4cfb-9319-5d1b53d6c467" />
 
 
 
