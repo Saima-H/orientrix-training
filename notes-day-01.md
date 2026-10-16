@@ -250,7 +250,152 @@ git reset
 to undo changes
 
 
+# Git & GitHub — One Page Cheat Sheet
 
+> **Git** = tool that tracks changes
+> **GitHub** = website that hosts Git repos
+
+---
+
+## Setup (one time)
+
+| Command | Purpose |
+|---|---|
+| `git --version` | Check Git is installed |
+| `git config --global user.name "X"` | Set your name |
+| `git config --global user.email "X"` | Set your email |
+| `ssh-keygen -t rsa -b 4096 -C "email"` | Generate SSH key |
+| `ssh-add ~/.ssh/<key>` | Register key with agent |
+
+Upload the `.pub` file to GitHub → **Settings → SSH and GPG keys**.
+
+---
+
+## Start a Repo
+
+| Command | Purpose |
+|---|---|
+| `git clone <url>` | Copy remote repo → local |
+| `git init` | Turn current folder into a repo |
+| `git remote add origin <url>` | Connect local repo → remote |
+| `git remote -v` | List connected remotes |
+
+---
+
+## The Core Loop (memorize this)
+
+```
+edit files  →  git add .  →  git commit -m "msg"  →  git push
+```
+
+| Command | Purpose |
+|---|---|
+| `git status` | What's changed / staged / untracked |
+| `git add <file>` or `git add .` | Stage changes (track them) |
+| `git commit -m "message"` | Save snapshot locally |
+| `git commit -am "message"` | Add + commit (tracked files only) |
+| `git push` | Upload to remote |
+| `git push -u origin <branch>` | First push of a new branch |
+| `git pull` | Download remote changes |
+
+---
+
+## Branching
+
+| Command | Purpose |
+|---|---|
+| `git branch` | List branches (`*` = current) |
+| `git checkout <branch>` | Switch branch |
+| `git checkout -b <name>` | Create + switch to new branch |
+| `git merge <branch>` | Merge branch into current |
+| `git merge master` | Bring master's changes into yours |
+| `git branch -D <name>` | Delete a branch |
+
+**Naming:** `feature/ticket-123` · `bugfix-login` · `hotfix-crash`
+
+---
+
+## Inspect / Compare
+
+| Command | Purpose |
+|---|---|
+| `git status` | Current state |
+| `git diff` | Unstaged changes vs last commit |
+| `git diff <branch>` | Compare current branch to another |
+| `git log` | Full commit history (newest first) |
+| `git log --oneline` | Compact history |
+
+`spacebar` = scroll · `q` = quit
+
+---
+
+## Undo / Recovery
+
+| Command | Purpose |
+|---|---|
+| `git reset` | Unstage everything |
+| `git reset <file>` | Unstage one file |
+| `git reset HEAD~1` | Undo last commit (keep changes) |
+| `git reset <hash>` | Go back to a specific commit |
+| `git reset --hard <hash>` | ⚠️ **DESTROY** everything after hash |
+| `git checkout -- <file>` | Discard changes to one file |
+
+---
+
+## Merge Conflict
+
+1. `git merge <branch>` → conflict reported
+2. Open the file. You'll see:
+
+   ```
+   <<<<<<< HEAD
+   your current branch's code
+   =======
+   incoming branch's code
+   >>>>>>> <branch>
+   ```
+
+3. Edit: keep what you want, **DELETE all markers**
+4. `git add <file>`
+5. `git commit -am "merged in <branch>"`
+
+---
+
+## Team Workflow (the one that matters)
+
+```bash
+git checkout master
+git pull                          # get latest
+git checkout -b feature/thing     # new branch
+# ...edit, add, commit...
+git push -u origin feature/thing
+# → Open Pull Request on GitHub
+# → Review, comment, fix, push again (PR auto-updates)
+# → Merge PR
+# → Delete branch (GitHub + local)
+git checkout master && git pull   # sync up
+```
+
+> **RULE:** never commit directly to `master` in a team repo.
+
+---
+
+## Forking
+
+- **Fork** button on GitHub → full copy into **your** account
+- Use when: contributing to a repo you don't own
+- Flow: `fork → clone your fork → branch → commit → push → PR to original`
+
+---
+
+## Golden Rules
+
+- `git status` before and after **every** operation
+- Commit messages explain **WHAT** and **WHY**
+- Never commit directly to `master` (team)
+- Delete feature branches after merge
+- `Ctrl+C` in terminal = **CANCEL**, not copy
+- Pull `master` often to avoid painful conflicts
 
 
 
