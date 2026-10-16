@@ -271,8 +271,6 @@ to,from, body:sms_2fa or any body accepted under trial
 
 # APIs for Beginners — Full Course Flowchart
 
-> Based on freeCodeCamp's *APIs for Beginners* (Craig Dennis, 2023).
-> A visual walkthrough of the entire course, unit by unit.
 
 ---
 
