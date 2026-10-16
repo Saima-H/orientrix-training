@@ -985,8 +985,678 @@ def multiply(x, y):
     return x * y
 
 def divide(x, y):
-    if y ==
+    if y == 0:
+        raise ValueError('Can not divide by zero!')
+    return x / y
+```
 
+```python
+# test_calc.py
+import unittest
+import calc
+
+class TestCalc(unittest.TestCase):
+
+    def test_add(self):
+        self.assertEqual(calc.add(10, 5), 15)
+        self.assertEqual(calc.add(-1, 1), 0)
+        self.assertEqual(calc.add(-1, -1), -2)
+
+    def test_subtract(self):
+        self.assertEqual(calc.subtract(10, 5), 5)
+        self.assertEqual(calc.subtract(-1, 1), -2)
+        self.assertEqual(calc.subtract(-1, -1), 0)
+
+    def test_multiply(self):
+        self.assertEqual(calc.multiply(10, 5), 50)
+        self.assertEqual(calc.multiply(-1, 1), -1)
+        self.assertEqual(calc.multiply(-1, -1), 1)
+
+    def test_divide(self):
+        self.assertEqual(calc.divide(10, 5), 2)
+        self.assertEqual(calc.divide(-1, 1), -1)
+        self.assertEqual(calc.divide(-1, -1), 1)
+        self.assertEqual(calc.divide(5, 2), 2.5)
+
+        with self.assertRaises(ValueError):
+            calc.divide(10, 0)
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+```python
+# employee.py
+import requests
+
+class Employee:
+    """A sample Employee class"""
+
+    raise_amt = 1.05
+
+    def __init__(self, first, last, pay):
+        self.first = first
+        self.last = last
+        self.pay = pay
+
+    @property
+    def email(self):
+        return '{}.{}@email.com'.format(self.first, self.last)
+
+    @property
+    def fullname(self):
+        return '{} {}'.format(self.first, self.last)
+
+    def apply_raise(self):
+        self.pay = int(self.pay * self.raise_amt)
+
+    def monthly_schedule(self, month):
+        response = requests.get(f'http://company.com/{self.last}/{month}')
+        if response.ok:
+            return response.text
+        else:
+            return 'Bad Response!'
+```
+
+```python
+# test_employee.py
+import unittest
+from unittest.mock import patch
+from employee import Employee
+
+class TestEmployee(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('setupClass')
+
+    @classmethod
+    def tearDownClass(cls):
+        print('teardownClass')
+
+    def setUp(self):
+        print('setUp')
+        self.emp_1 = Employee('Corey', 'Schafer', 50000)
+        self.emp_2 = Employee('Sue', 'Smith', 60000)
+
+    def tearDown(self):
+        print('tearDown\n')
+
+    def test_email(self):
+        print('test_email')
+        self.assertEqual(self.emp_1.email, 'Corey.Schafer@email.com')
+        self.assertEqual(self.emp_2.email, 'Sue.Smith@email.com')
+
+        self.emp_1.first = 'John'
+        self.emp_2.first = 'Jane'
+
+        self.assertEqual(self.emp_1.email, 'John.Schafer@email.com')
+        self.assertEqual(self.emp_2.email, 'Jane.Smith@email.com')
+
+    def test_fullname(self):
+        print('test_fullname')
+        self.assertEqual(self.emp_1.fullname, 'Corey Schafer')
+        self.assertEqual(self.emp_2.fullname, 'Sue Smith')
+
+        self.emp_1.first = 'John'
+        self.emp_2.first = 'Jane'
+
+        self.assertEqual(self.emp_1.fullname, 'John Schafer')
+        self.assertEqual(self.emp_2.fullname, 'Jane Smith')
+
+    def test_apply_raise(self):
+        print('test_apply_raise')
+        self.emp_1.apply_raise()
+        self.emp_2.apply_raise()
+
+        self.assertEqual(self.emp_1.pay, 52500)
+        self.assertEqual(self.emp_2.pay, 63000)
+
+    def test_monthly_schedule(self):
+        with patch('employee.requests.get') as mocked_get:
+            mocked_get.return_value.ok = True
+            mocked_get.return_value.text = 'Success'
+
+            schedule = self.emp_1.monthly_schedule('May')
+            mocked_get.assert_called_with('http://company.com/Schafer/May')
+            self.assertEqual(schedule, 'Success')
+
+            mocked_get.return_value.ok = False
+
+            schedule = self.emp_2.monthly_schedule('June')
+            mocked_get.assert_called_with('http://company.com/Smith/June')
+            self.assertEqual(schedule, 'Bad Response!')
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+---
+
+### 📦 17. Pipenv
+
+```bash
+# Install pipenv
+pip install pipenv
+
+# Navigate to project
+cd my_project
+
+# Install a package (auto-creates venv + Pipfile)
+pipenv install requests
+
+# Activate environment
+pipenv shell
+
+# Run command in environment
+pipenv run python
+
+# Deactivate (use exit, NOT deactivate)
+exit
+
+# Install from requirements.txt
+pipenv install -r requirements.txt
+
+# Show dependencies as requirements format
+pipenv lock -r
+
+# Install dev-only package
+pipenv install pytest --dev
+
+# Uninstall
+pipenv uninstall requests
+
+# Change Python version (edit Pipfile, then):
+pipenv --python 3.6
+
+# Remove virtual environment
+pipenv --rm
+
+# Recreate environment from Pipfile
+pipenv install
+
+# Show venv path
+pipenv --venv
+
+# Check security vulnerabilities
+pipenv check
+
+# Show dependency graph
+pipenv graph
+
+# Lock for production (deterministic build)
+pipenv lock
+
+# Install from lock file (production)
+pipenv install --ignore-pipfile
+```
+
+```ini
+# Pipfile
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+
+[packages]
+requests = "*"
+django = "==2.1.2"
+
+[requires]
+python_version = "3.7"
+```
+
+```ini
+# .env file
+SECRET_KEY=my_super_secret_key
+DATABASE_URL=postgres://user:pass@localhost:5432/mydb
+```
+
+```python
+# Access .env variables
+import os
+print(os.environ['SECRET_KEY'])
+```
+
+---
+
+### 🧰 18. venv (Windows)
+
+```cmd
+REM Check installed packages in global environment
+pip list
+
+REM Create virtual environment
+python -m venv projectEnv
+
+REM List directory to see the new env folder
+dir
+
+REM Activate the environment (Windows CMD)
+projectEnv\Scripts\activate.bat
+
+REM Verify which python is being used
+where python
+
+REM List packages (only pip and setuptools in fresh env)
+pip list
+
+REM Install packages into the environment
+pip install requests
+pip install pytz
+
+REM List to confirm installs
+pip list
+
+REM Freeze dependencies to requirements.txt format
+pip freeze
+
+REM Deactivate
+deactivate
+
+REM Delete the environment (Windows CMD)
+rmdir /S /Q projectEnv
+
+REM Alternative: create project + venv inside it (preferred convention)
+mkdir my_project
+python -m venv my_project\venv
+
+REM Activate it
+my_project\venv\Scripts\activate.bat
+
+REM Install from a requirements.txt file
+pip install -r requirements.txt
+
+REM Confirm installs
+pip list
+
+REM Deactivate
+deactivate
+
+REM Create env with access to system packages
+python -m venv venv --system-site-packages
+
+REM Activate it
+venv\Scripts\activate.bat
+
+REM List all packages (system + local)
+pip list
+
+REM Install a new package that doesn't exist globally
+pip install SQLAlchemy
+
+REM List ONLY locally installed packages (excluding system)
+pip list --local
+
+REM Verify SQLAlchemy is not in global env
+deactivate
+pip list
+```
+
+```python
+# script.py — sample project file (must NOT be placed inside venv folder)
+print("Hello from project script")
+```
+
+```text
+# requirements.txt (output of pip freeze)
+requests==2.22.0
+pytz==2019.3
+certifi==2019.9.11
+chardet==3.0.4
+idna==2.8
+urllib3==1.25.6
+```
+
+---
+
+### ⚠️ 19. Common Python Mistakes
+
+#### Mistake 1: Tabs vs Spaces
+
+```python
+# BAD: mixing tab and spaces
+nums = [1, 2, 3, 4]
+for num in nums:
+    square = num ** 2  # one tab
+    print(square)      # four spaces
+# → IndentationError: unindent does not match any outer indentation level
+```
+
+```python
+# GOOD: editor converts tabs to spaces
+nums = [1, 2, 3, 4]
+for num in nums:
+    square = num ** 2
+    print(square)
+```
+
+```json
+// Sublime Text settings
+{
+    "translate_tabs_to_spaces": true,
+    "tab_size": 4
+}
+```
+
+#### Mistake 2: Module named same as import
+
+```python
+# File: math.py (BAD — shadows standard library math)
+from math import radians, sin
+
+rads = radians(90)
+print(sin(rads))
+# → ImportError: cannot import name 'radians' from 'math'
+#    (Python is importing from YOUR math.py, not stdlib)
+```
+
+```python
+# File: project.py (GOOD — renamed)
+from math import radians, sin
+
+rads = radians(90)
+print(sin(rads))  # 1.0
+```
+
+```python
+# Same problem with pip-installed packages
+# File: flask.py (BAD)
+import flask  # → ImportError, because YOUR flask.py shadows real flask
+
+# Fix: rename file to myapp.py, app.py, etc.
+```
+
+#### Mistake 3: Variable named same as function
+
+```python
+# BAD: variable name shadows imported function
+from math import radians, sin
+
+radians = radians(90)          # rebinds `radians` to a float!
+print(sin(radians))            # works once
+
+rad_45 = radians(45)           # → TypeError: 'float' object is not callable
+```
+
+```python
+# GOOD: use distinct name
+from math import radians, sin
+
+rads = radians(90)
+print(sin(rads))               # 1.0
+rad_45 = radians(45)
+print(sin(rad_45))
+```
+
+#### Mistake 4: Mutable default arguments
+
+```python
+# BAD: mutable default argument
+def add_employee(emp, emp_list=[]):
+    emp_list.append(emp)
+    print(emp_list)
+
+emps = ['Corey', 'John']
+add_employee('Cory', emps)   # ['Corey', 'John', 'Cory']
+add_employee('Cory')          # ['Cory']
+add_employee('John')          # ['Cory', 'John']   ← BUG! Should be ['John']
+add_employee('Bob')           # ['Cory', 'John', 'Bob']
+```
+
+```python
+# GOOD: use None as sentinel
+def add_employee(emp, emp_list=None):
+    if emp_list is None:
+        emp_list = []
+    emp_list.append(emp)
+    print(emp_list)
+
+add_employee('Cory')   # ['Cory']
+add_employee('John')   # ['John']
+add_employee('Bob')    # ['Bob']
+```
+
+```python
+# Same issue with datetime
+from datetime import datetime
+import time
+
+# BAD: time is frozen at function definition
+def display_time(time=datetime.now()):
+    print(time.strftime('%B %d, %Y %H:%M:%S'))
+
+display_time()
+time.sleep(1)
+display_time()
+time.sleep(1)
+display_time()
+# → all print the SAME time
+```
+
+```python
+# GOOD: compute inside function
+from datetime import datetime
+import time
+
+def display_time(time=None):
+    if time is None:
+        time = datetime.now()
+    print(time.strftime('%B %d, %Y %H:%M:%S'))
+
+display_time()
+time.sleep(1)
+display_time()
+time.sleep(1)
+display_time()
+# → each prints a NEW time
+```
+
+#### Mistake 5: Iterators can be exhausted
+
+```python
+# Python 2 behavior (returns list)
+names = ['Peter Parker', 'Clark Kent', 'Wade Wilson', 'Bruce Wayne']
+heroes = ['Spiderman', 'Superman', 'Deadpool', 'Batman']
+identities = zip(names, heroes)
+print(identities)
+# → [('Peter Parker', 'Spiderman'), ('Clark Kent', 'Superman'), ...]
+
+for identity in identities:
+    print('{} is actually {}!'.format(identity[0], identity[1]))
+```
+
+```python
+# Python 3 behavior (returns iterator)
+names = ['Peter Parker', 'Clark Kent', 'Wade Wilson', 'Bruce Wayne']
+heroes = ['Spiderman', 'Superman', 'Deadpool', 'Batman']
+identities = zip(names, heroes)
+print(identities)
+# → <zip object at 0x7f...>
+```
+
+```python
+# BAD: exhaust iterator then try to reuse
+identities = zip(names, heroes)
+print(list(identities))     # consumes the iterator
+for identity in identities:
+    print(identity)         # → NOTHING (already exhausted)
+```
+
+```python
+# GOOD: cast to list once
+identities = list(zip(names, heroes))
+print(identities)           # [('Peter Parker', 'Spiderman'), ...]
+for identity in identities:
+    print('{} is actually {}!'.format(identity[0], identity[1]))
+# → both work fine
+```
+
+#### Mistake 6: Wildcard imports (`from x import *`)
+
+```python
+# Explicit import — clear, debuggable
+import os
+os.rename('a.txt', 'b.txt')
+
+from os import rename, remove
+rename('a.txt', 'b.txt')
+remove('a.txt')
+```
+
+```python
+# BAD: wildcard imports
+from os import *
+rename('a.txt', 'b.txt')   # where does rename come from? unclear!
+```
+
+```python
+# DANGEROUS: two wildcards with clashing names
+from html import *
+from glob import *
+
+print(help(escape))
+# → Help on function escape in module glob:
+#    (html.escape silently overwritten by glob.escape)
+```
+
+```python
+# GOOD: explicit imports
+import html
+import glob
+
+html.escape('<b>')       # html-escape
+glob.escape('[abc]')     # path-escape
+```
+
+```python
+# GOOD: alias imports
+from html import escape as h_escape
+from glob import escape as g_escape
+
+h_escape('<b>')          # html-escape
+g_escape('[abc]')        # path-escape
+```
+
+---
+
+### 🌐 20. Requests (Essentials)
+
+```python
+import requests
+
+# GET request
+r = requests.get('https://api.github.com')
+print(r.status_code)     # 200
+print(r.ok)              # True
+print(r.text)            # response body as string
+print(r.headers)         # response headers
+
+# GET with query params
+payload = {'q': 'python', 'sort': 'stars'}
+r = requests.get('https://api.github.com/search/repositories', params=payload)
+print(r.url)             # ...?q=python&sort=stars
+
+# JSON response
+r = requests.get('https://api.github.com/users/octocat')
+data = r.json()          # dict
+print(data['name'])
+
+# Custom headers
+headers = {'User-Agent': 'my-app/1.0'}
+r = requests.get('https://api.github.com', headers=headers)
+
+# POST form data
+r = requests.post('https://httpbin.org/post', data={'key': 'value'})
+
+# POST JSON
+r = requests.post('https://httpbin.org/post', json={'key': 'value'})
+
+# Basic auth
+r = requests.get('https://httpbin.org/basic-auth/user/pass',
+                 auth=('user', 'pass'))
+
+# Timeout
+try:
+    r = requests.get('https://httpbin.org/delay/5', timeout=2)
+except requests.exceptions.Timeout:
+    print('Request timed out')
+
+# Raise for bad status
+r = requests.get('https://httpbin.org/status/404')
+r.raise_for_status()     # → HTTPError
+
+# Download an image
+r = requests.get('https://httpbin.org/image/jpeg', stream=True)
+with open('image.jpg', 'wb') as f:
+    for chunk in r.iter_content(1024):
+        f.write(chunk)
+
+# Save content directly
+r = requests.get('https://httpbin.org/image/png')
+with open('image.png', 'wb') as f:
+    f.write(r.content)
+
+# Session (persists cookies & headers across requests)
+s = requests.Session()
+s.headers.update({'User-Agent': 'my-app/1.0'})
+r = s.get('https://httpbin.org/cookies/set/sessioncookie/12345')
+r = s.get('https://httpbin.org/cookies')
+print(r.text)
+```
+
+---
+
+## 🔧 Debugging Quick Reference
+
+| Error | Meaning | Common Cause | Fix |
+|-------|---------|--------------|-----|
+| `SyntaxError` | Code can't be parsed | Missing colon, bad indentation, `07` instead of `7` | Check line before error |
+| `IndentationError` | Wrong whitespace | Mixed tabs/spaces, missing indent after `if`/`for`/`def` | Use 4 spaces consistently |
+| `NameError` | Variable not defined | Typo, variable out of scope | Check spelling + scope (LEGB) |
+| `TypeError` | Wrong type | `'1' + 1`, calling non-callable | Check `type()`, cast with `int()`/`str()` |
+| `ValueError` | Right type, wrong value | `int('abc')`, `divide(x, 0)` | Validate input, try/except |
+| `KeyError` | Dict key missing | `student['phone']` when no key | Use `.get()` with default |
+| `IndexError` | List index out of range | `courses[4]` on 4-item list | Check `len()`, use `-1` for last |
+| `AttributeError` | Method doesn't exist | `tuple.sort()`, wrong object | Check `dir(obj)` |
+| `ImportError` / `ModuleNotFoundError` | Module not found | Wrong path, not installed, wrong Python | Check `sys.path`, `pip show`, `sys.executable` |
+| `FileNotFoundError` | File missing | Typo in name, wrong dir | `os.path.exists()`, check `os.getcwd()` |
+| `ZeroDivisionError` | Divide by zero | `x / 0` | Guard with `if y != 0` |
+| `UnboundLocalError` | Local used before assignment | Assigning to global name inside function | Use `global` or rename |
+
+---
+
+## ✅ Final Summary — What You Now Have
+
+| # | Topic | Key Skill Gained |
+|---|-------|------------------|
+| 1 | Strings | Text manipulation, formatting |
+| 2 | Ints/Floats | Math, casting, comparisons |
+| 3 | Lists/Tuples/Sets | Sequential data, mutability |
+| 4 | Dictionaries | Key-value storage |
+| 5 | Conditionals | Decision making, truthy/falsy |
+| 6 | Loops | Iteration, break/continue |
+| 7 | Functions | Reusable code, args/kwargs |
+| 8 | Scope | LEGB, global/nonlocal |
+| 9 | Modules | Importing, standard library |
+| 10 | OS Module | File system, paths, env |
+| 11 | File Objects | Read/write, context managers |
+| 12 | CSV | Parse/write structured data |
+| 13 | Datetime | Dates, times, timezones |
+| 14 | Sorting | Custom sort criteria |
+| 15 | Error Handling | try/except/finally |
+| 16 | Unit Testing | Verify code, mock externals |
+| 17 | Pipenv | Reproducible environments |
+| 18 | venv | Built-in virtual environments |
+| 19 | Common Mistakes | 6 pitfalls to avoid |
+| 20 | Requests | HTTP requests, JSON, downloads |
+
+---
+
+> **You now have a complete Python reference — from noob to pro.**
 
 
 
