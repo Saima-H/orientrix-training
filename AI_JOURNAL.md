@@ -74,15 +74,11 @@ Here's how your 6 days actually look:
 
 The block tells you what to learn. Nothing else.
 
-# Idea Vault — Flowchart for GitHub
-
-Here are **two versions**. Pick whichever you like. Both are ready to paste into a `README.md` on GitHub (GitHub renders Mermaid diagrams automatically).
-
+# Idea Vault — Flowchart
 ---
 
-## Version 1: System Architecture (Recommended)
+## Version 1: System Architecture 
 
-Shows how the pieces fit together.
 
 ```mermaid
 flowchart LR
@@ -127,7 +123,7 @@ flowchart TD
 
 ---
 
-## Version 3: Simple Linear Flow (Cleanest for README)
+## Version 3: Simple Linear Flow (simplest)
 
 If you want something minimal and beginner-friendly.
 
@@ -142,57 +138,3 @@ flowchart LR
     C --> B
     B --> A
 ```
-
----
-
-## How to Use on GitHub
-
-1. Create a file called `README.md` in your `idea-vault/` repo
-2. Paste any of the code blocks above (including the ` ```mermaid ` and closing ` ``` `)
-3. Commit and push
-4. GitHub renders it as a diagram automatically
-
-**Example README snippet:**
-
-````markdown
-# 💡 Idea Vault
-
-A personal app to save ideas/links and auto-tag them.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    User([👤 User]) --> FE[Next.js Frontend]
-    FE --> BE[FastAPI Backend]
-    BE --> DB[(SQLite Database)]
-    BE --> AI[Smart Tag Generator]
-    AI --> BE
-    DB --> BE
-    BE --> FE
-```
-
-## How it works
-1. User adds an idea
-2. Backend saves it + generates tags
-3. Frontend displays tagged ideas
-````
-
----
-
-## Which One Should You Use?
-
-| Use Case | Pick |
-|----------|------|
-| Portfolio / showing off architecture | **Version 1** |
-| Explaining how the app works to a user | **Version 2** |
-| Clean, minimal README | **Version 3** |
-| Best of both worlds | **Version 1 + Version 2** (architecture + user flow) |
-
-**My recommendation:** Use **Version 1** as the main architecture diagram. Add **Version 2** below it as "How the user interacts with it." That's a professional-looking README.
-
----
-
-Want me to also draw the **database schema** as a Mermaid diagram (showing the `ideas`, `tags`, and `idea_tags` tables with their relationships)? That's the third diagram most good READMEs have.
-
----
