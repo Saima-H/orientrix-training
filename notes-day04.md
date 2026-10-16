@@ -6,6 +6,16 @@ DBMS PERFORMS CRUD ON DB
 
 <img width="290" height="145" alt="image" src="https://github.com/user-attachments/assets/99efbe74-7acf-4ea8-9f66-d0125bde88ca" />
 
+| Key Type | Definition | Rules | Can Be NULL? | How Many Per Table? | Example | Purpose |
+|---|---|---|---|---|---|---|
+| **Primary Key (PK)** | An attribute (or set of attributes) that uniquely identifies each row in a table. | Must be unique + NOT NULL. Only one PK per table. | ❌ No | Exactly 1 | `student_id INT PRIMARY KEY` | Uniquely identify every row. |
+| **Unique Key (UK)** | An attribute (or set of attributes) whose values must be different for every row. | Must be unique. Can have one NULL (MySQL allows multiple NULLs). | ✅ Yes (one NULL allowed in MySQL) | Many | `email VARCHAR(50) UNIQUE` | Enforce uniqueness on non-PK columns (e.g., email, username). |
+| **Foreign Key (FK)** | An attribute that references the primary key of another table. | Value must exist in the referenced table (or be NULL). | ✅ Yes (if not part of PK) | Many | `branch_id INT, FOREIGN KEY (branch_id) REFERENCES branch(branch_id)` | Link two tables together. Define relationships. |
+| **Composite Key (CK)** | A primary key made up of two or more columns. Together they uniquely identify a row. | Each column alone may repeat, but the combination must be unique. | ❌ No (as PK) | 1 (as PK) | `PRIMARY KEY (student_id, class_id)` | Uniquely identify rows in junction tables (M:N relationships). |
+| **Compound Key** | A composite key where each column is also a foreign key. | Special type of composite key. Both columns are FKs. | ❌ No | 1 (as PK) | `PRIMARY KEY (emp_id, client_id)` where both are FKs | Define M:N relationships with extra attributes. |
+| **Surrogate Key** | A primary key with no real-world meaning (auto-generated). | Usually AUTO_INCREMENT. | ❌ No | 1 (as PK) | `emp_id INT AUTO_INCREMENT PRIMARY KEY` | Simple, stable identifier. |
+| **Natural Key** | A primary key that has real-world meaning. | Must be unique + NOT NULL. | ❌ No | 1 (as PK) | `ssn VARCHAR(11) PRIMARY KEY` | Use real-world identifier as PK. |
+
 # Joins
 <img width="695" height="900" alt="image" src="https://github.com/user-attachments/assets/c5916bf2-4a3e-4d09-932b-e7af810bf3ff" />
 
