@@ -74,29 +74,32 @@ Here's how your 6 days actually look:
 
 The block tells you what to learn. Nothing else.
 
-# Idea Vault — Flowchart
+# Idea Vault — Flowchart( first iteration)
+# Idea Vault — README Flowcharts (Copy-Paste Ready)
+
+Paste this straight into your `README.md` on GitHub. Everything below is GitHub-ready.
+
 ---
 
-## Version 1: System Architecture 
-
+## 📐 System Architecture
 
 ```mermaid
 flowchart LR
-    User([👤 User]) -->|Opens browser| FE[Next.js Frontend<br/>localhost:3000]
-    FE -->|HTTP Request<br/>GET / POST / DELETE| BE[FastAPI Backend<br/>localhost:8000]
-    BE -->|SQL Query| DB[(SQLite Database<br/>ideas · tags · idea_tags)]
-    BE -->|If tags requested| AI{Smart Tag<br/>Generator}
-    AI -->|Mock NLP<br/>or| LLM[LLM API<br/>OpenAI / Claude]
+    User([👤 User]) -->|Opens browser| FE["Next.js Frontend :3000<br/>Dashboard · Add Form · Filter"]
+    FE -->|HTTP Request<br/>GET / POST / DELETE| CORS{{CORS Middleware}}
+    CORS --> BE["FastAPI Backend :8000<br/>CRUD + Smart Endpoint"]
+    BE -->|SQL Query| DB[("SQLite Database<br/>ideas · tags · idea_tags")]
+    BE -->|If tags requested| AI{"Smart Tag<br/>Generator"}
+    AI -->|Mock NLP or| LLM[LLM API<br/>OpenAI / Claude]
     DB -->|Return data| BE
-    BE -->|JSON Response| FE
+    BE -->|JSON Response| CORS
+    CORS --> FE
     FE -->|Rendered UI| User
 ```
 
 ---
 
-## Version 2: User Flow (What the user does)
-
-Shows the app from the user's point of view.
+## 🔄 User Flow
 
 ```mermaid
 flowchart TD
@@ -123,9 +126,43 @@ flowchart TD
 
 ---
 
-## Version 3: Simple Linear Flow (simplest)
+## 🗄️ Database Schema
 
-If you want something minimal and beginner-friendly.
+```mermaid
+erDiagram
+    USERS ||--o{ IDEAS : creates
+    IDEAS ||--o{ IDEA_TAGS : has
+    TAGS ||--o{ IDEA_TAGS : labeled
+
+    USERS {
+        int id PK
+        string username
+        string email
+        datetime created_at
+    }
+
+    IDEAS {
+        int id PK
+        int user_id FK
+        text content
+        string url
+        datetime created_at
+    }
+
+    TAGS {
+        int id PK
+        string name
+    }
+
+    IDEA_TAGS {
+        int idea_id FK
+        int tag_id FK
+    }
+```
+
+---
+
+## ⚡ Simple Linear Overview
 
 ```mermaid
 flowchart LR
@@ -138,3 +175,14 @@ flowchart LR
     C --> B
     B --> A
 ```
+
+---
+
+## How to Use
+
+1. Create `README.md` in your `idea-vault/` repo
+2. Paste any/all of the blocks above **including** the triple backticks
+3. `git add README.md && git commit -m "Add architecture diagrams" && git push`
+4. GitHub renders the diagrams automatically
+
+**Recommended order in README:** System Architecture → User Flow → Database Schema → Simple Overview (or drop the last one if you want it clean).
