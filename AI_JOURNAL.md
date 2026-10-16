@@ -1,4 +1,4 @@
-#IDEA VAULT:
+# IDEA VAULT:
 The "Phase 1: Learn SQL → Phase 2: Build SQL" structure I gave you is **artificial**. It's how schools teach. It's not how builders work.
 
 **Real builders do this:**
