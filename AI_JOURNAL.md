@@ -1,35 +1,10 @@
 # IDEA VAULT:
-The "Phase 1: Learn SQL → Phase 2: Build SQL" structure I gave you is **artificial**. It's how schools teach. It's not how builders work.
-
-**Real builders do this:**
-
-> "I need to store ideas. Hmm, how do I store data? Oh, databases. Let me learn *just enough* SQL to create this one table. Done. Now I need to fetch it back. Oh, `SELECT`. Let me learn that. Done."
-
-That's it. That's the whole loop. **Learn → Build → Hit wall → Learn → Build → Hit wall → Learn.**
-
-You don't "dedicate time to learn SQL." You **hit a point where you need SQL**, and you learn the 10% of SQL that solves *your* problem. Then you move on. If you need more later, you learn more later.
-
----
-
-## Why the "Dedicated Learning Time" Model Fails
-
-| Dedicated Learning | Just-in-Time Learning |
-|--------------------|-----------------------|
-| Watch 4-hour SQL course | Learn `CREATE TABLE` + `INSERT` in 20 min |
-| Forget 80% by the time you build | Use 100% of what you learned immediately |
-| No context for *why* things exist | Every concept has a reason (your app needs it) |
-| Motivation drops (no output) | Motivation spikes (app grows daily) |
-| Tutorial hell | Ship hell (the good kind) |
-
-**You already knew this.** That's why you said *"if I don't organise my learning watching videos I'm not gaining much."* Trust that instinct.
-
----
 
 ## The Correct Model: Build-First, Learn-When-Stuck
 
 Here's how your 6 days actually look:
 
-### Day 1 — "I want to build an idea vault"
+### 1 — "I want to build an idea vault"
 - Open Cursor. Start a project.
 - **Stuck:** "How do I save ideas?"
 - **Learn:** What a database is, `CREATE TABLE`, `INSERT`, `SELECT`. 30 minutes, not 4 hours.
@@ -42,7 +17,7 @@ Here's how your 6 days actually look:
 - **Build:** Commit.
 - **Done for the day.** You learned SQL, Git, and databases — *by building*.
 
-### Day 2 — "I want tags on my ideas"
+### 2 — "I want tags on my ideas"
 - **Stuck:** "One idea can have many tags, one tag can belong to many ideas. How?"
 - **Learn:** Many-to-many relationship, junction table.
 - **Build:** `tags` table + `idea_tags` table. Write JOIN queries.
@@ -52,7 +27,7 @@ Here's how your 6 days actually look:
 - **Commit.**
 - **Done.** You learned intermediate SQL — *by building*.
 
-### Day 3 — "I want this to be an actual API"
+###  3 — "I want this to be an actual API"
 - **Stuck:** "How do I make an API in Python?"
 - **Learn:** FastAPI basics — `@app.get()`, `@app.post()`. 1 hour.
 - **Build:** `GET /ideas`, `POST /ideas`.
@@ -62,7 +37,7 @@ Here's how your 6 days actually look:
 - **Commit.**
 - **Done.** You learned Python + FastAPI — *by building*.
 
-### Day 4 — "The smart tag endpoint"
+###  4 — "The smart tag endpoint"
 - **Stuck:** "How do I generate tags?"
 - **Learn:** String manipulation, or how to call an LLM API. 30 minutes.
 - **Build:** `POST /ideas/{id}/generate-tags`.
@@ -72,7 +47,7 @@ Here's how your 6 days actually look:
 - **Commit.**
 - **Done.**
 
-### Day 5 — "Make it look good + filter"
+###  5 — "Make it look good + filter"
 - **Stuck:** "How do I filter by tag?"
 - **Learn:** React state, conditional rendering. 30 minutes.
 - **Build:** Filter component.
@@ -81,7 +56,7 @@ Here's how your 6 days actually look:
 - **Build:** Fix it. **Log it in AI_JOURNAL.**
 - **Commit.**
 
-### Day 6 — "Prove it works"
+###  6 — "Prove it works"
 - **Stuck:** "How do I test an API?"
 - **Learn:** Postman basics. 1 hour.
 - **Build:** 10+ requests.
@@ -99,50 +74,125 @@ Here's how your 6 days actually look:
 
 The block tells you what to learn. Nothing else.
 
----
+# Idea Vault — Flowchart for GitHub
 
-## What About the Deliverables? (notes, questions.md, etc.)
-
-Those still exist. But now they're **byproducts of building**, not separate tasks:
-
-| Deliverable | How it happens naturally |
-|-------------|--------------------------|
-| `notes/day1.md` | You write down what you learned when you got unstuck. 5 minutes at end of day. |
-| `notes/day2.md` | Same. |
-| `notes/day3.md` | Same. |
-| `sql-practice.sql` | It *is* your app's schema + the queries you needed. |
-| `questions.md` | Every time you got stuck and figured it out, you note it. Confusions that remain → the file. |
-| `AI_JOURNAL.md` | You write it *as* you prompt AI, not after. |
-| `test-cases.md` | You write these *while* testing your app. |
-| `bug-reports.md` | You find bugs *while* using your app. |
-
-**None of these require dedicated time.** They're artifacts of the build.
+Here are **two versions**. Pick whichever you like. Both are ready to paste into a `README.md` on GitHub (GitHub renders Mermaid diagrams automatically).
 
 ---
 
-## The One Exception: When You *Should* Dedicate Time
+## Version 1: System Architecture (Recommended)
 
-There are exactly **two** cases where dedicated learning beats just-in-time:
+Shows how the pieces fit together.
 
-1. **Fundamentals that unlock everything else.** Example: understanding HTTP methods before you touch FastAPI. 30 minutes of dedicated learning saves you 5 hours of confusion.
-
-2. **When you're stuck for more than 30 minutes.** If you've been debugging for 30+ minutes and AI isn't helping, *stop building* and *learn the concept*. The block is a knowledge gap, not a bug.
-
-Everything else? **Learn while building.**
-
----
-
-## Your Actual Daily Loop
-
-```
-1. Pick one feature for today
-2. Start building it with AI (Cursor/Windsurf)
-3. Hit a wall → ask AI or search the concept → learn just enough
-4. Build past the wall
-5. Commit
-6. Write 3-5 lines in notes/ai_journal
-7. Repeat until day ends
+```mermaid
+flowchart LR
+    User([👤 User]) -->|Opens browser| FE[Next.js Frontend<br/>localhost:3000]
+    FE -->|HTTP Request<br/>GET / POST / DELETE| BE[FastAPI Backend<br/>localhost:8000]
+    BE -->|SQL Query| DB[(SQLite Database<br/>ideas · tags · idea_tags)]
+    BE -->|If tags requested| AI{Smart Tag<br/>Generator}
+    AI -->|Mock NLP<br/>or| LLM[LLM API<br/>OpenAI / Claude]
+    DB -->|Return data| BE
+    BE -->|JSON Response| FE
+    FE -->|Rendered UI| User
 ```
 
-That's it. That's the whole method.
+---
 
+## Version 2: User Flow (What the user does)
+
+Shows the app from the user's point of view.
+
+```mermaid
+flowchart TD
+    Start([User opens Idea Vault]) --> ViewAll[See all saved ideas]
+    ViewAll --> Choice{What do you want to do?}
+
+    Choice -->|Add idea| AddForm[Fill form:<br/>text or URL]
+    AddForm --> GenTags[Click ✨ Generate Tags]
+    GenTags --> ShowTags[Show 2-3 suggested tags]
+    ShowTags --> Save[Click Save]
+    Save --> PostAPI[POST /ideas<br/>to FastAPI]
+    PostAPI --> StoreDB[(Save to DB)]
+    StoreDB --> ViewAll
+
+    Choice -->|Filter| PickTag[Pick a tag]
+    PickTag --> FilterAPI[GET /ideas?tag=xyz]
+    FilterAPI --> ShowFiltered[Show filtered list]
+    ShowFiltered --> ViewAll
+
+    Choice -->|Delete| PickIdea[Pick an idea]
+    PickIdea --> DelAPI[DELETE /ideas/:id]
+    DelAPI --> ViewAll
+```
+
+---
+
+## Version 3: Simple Linear Flow (Cleanest for README)
+
+If you want something minimal and beginner-friendly.
+
+```mermaid
+flowchart LR
+    A[👤 User] --> B[Next.js<br/>Frontend]
+    B --> C[FastAPI<br/>Backend]
+    C --> D[(SQLite<br/>Database)]
+    C --> E[🤖 Smart Tag<br/>Generator]
+    E --> C
+    D --> C
+    C --> B
+    B --> A
+```
+
+---
+
+## How to Use on GitHub
+
+1. Create a file called `README.md` in your `idea-vault/` repo
+2. Paste any of the code blocks above (including the ` ```mermaid ` and closing ` ``` `)
+3. Commit and push
+4. GitHub renders it as a diagram automatically
+
+**Example README snippet:**
+
+````markdown
+# 💡 Idea Vault
+
+A personal app to save ideas/links and auto-tag them.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User([👤 User]) --> FE[Next.js Frontend]
+    FE --> BE[FastAPI Backend]
+    BE --> DB[(SQLite Database)]
+    BE --> AI[Smart Tag Generator]
+    AI --> BE
+    DB --> BE
+    BE --> FE
+```
+
+## How it works
+1. User adds an idea
+2. Backend saves it + generates tags
+3. Frontend displays tagged ideas
+````
+
+---
+
+## Which One Should You Use?
+
+| Use Case | Pick |
+|----------|------|
+| Portfolio / showing off architecture | **Version 1** |
+| Explaining how the app works to a user | **Version 2** |
+| Clean, minimal README | **Version 3** |
+| Best of both worlds | **Version 1 + Version 2** (architecture + user flow) |
+
+**My recommendation:** Use **Version 1** as the main architecture diagram. Add **Version 2** below it as "How the user interacts with it." That's a professional-looking README.
+
+---
+
+Want me to also draw the **database schema** as a Mermaid diagram (showing the `ideas`, `tags`, and `idea_tags` tables with their relationships)? That's the third diagram most good READMEs have.
+
+---
