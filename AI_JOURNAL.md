@@ -75,7 +75,6 @@ Here's how your 6 days actually look:
 The block tells you what to learn. Nothing else.
 
 # Idea Vault — Flowchart( first iteration)
-# Idea Vault — README Flowcharts (Copy-Paste Ready)
 
 Paste this straight into your `README.md` on GitHub. Everything below is GitHub-ready.
 
