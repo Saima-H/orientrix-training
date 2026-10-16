@@ -6,6 +6,9 @@ DBMS PERFORMS CRUD ON DB
 
 <img width="290" height="145" alt="image" src="https://github.com/user-attachments/assets/99efbe74-7acf-4ea8-9f66-d0125bde88ca" />
 
+# Joins
+<img width="695" height="900" alt="image" src="https://github.com/user-attachments/assets/c5916bf2-4a3e-4d09-932b-e7af810bf3ff" />
+
 # Python 
 
 ## finallllllll
