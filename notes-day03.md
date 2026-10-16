@@ -236,15 +236,27 @@ ye link ko modify karna
 to this form 
 https://api.twilio.com/2010-04-01/Accounts/:TWILIO_ACCOUNT_SID/Messages.json?To=+17372508034 &PageSize=20
 
+
+final waali:
+https://api.twilio.com/2010-04-01/Accounts/:TWILIO_ACCOUNT_SID/Messages.json?To=+17372508034
 <img width="638" height="329" alt="image" src="https://github.com/user-attachments/assets/9beffafc-f134-482a-940f-65a315c7a9f2" />
 then u get an error as shown in image 
 
 
 
+<img width="640" height="348" alt="image" src="https://github.com/user-attachments/assets/2d95faa1-76db-4257-892a-e484242bf6d6" />
+then select auth//>basic auth
+username-sid
+pwd-auth_token
+
+curl -X GET "https://api.twilio.com/2010-04-01/Accounts/$TWILIO_ACCOUNT_SID/Messages.json?PageSize=20" \
+-u $TWILIO_API_KEY:$TWILIO_API_SECRET
 
 
+just like get replace it with post and also copy link to create msg make changes to body 
+to,from, body:sms_2fa or any body accepted under trial 
 
-
+<img width="640" height="337" alt="image" src="https://github.com/user-attachments/assets/a89a4ef3-8fec-4637-b4d5-be42ba8d1daa" />
 
 
 
