@@ -6,25 +6,9 @@ DBMS PERFORMS CRUD ON DB
 
 <img width="290" height="145" alt="image" src="https://github.com/user-attachments/assets/99efbe74-7acf-4ea8-9f66-d0125bde88ca" />
 
-# Python Master Reference — Complete
+# Python 
 
-> One Master Table + One Flowchart + All Code Snippets
-> Noob → Pro roadmap for explaining and debugging Python
-
----
-
-## ⏱️ Reading Order (1-Hour Plan)
-
-| Time | Section | Use it for |
-|------|---------|------------|
-| 0–10 min | Master Table | Skim as cheat sheet |
-| 10–15 min | Flowchart | Mental model of how topics connect |
-| 15–45 min | Code Snippets | Copy-paste reference while coding |
-| 45–60 min | Debugging Reference | Error lookup when stuck |
-
----
-
-## 🎯 Master Table — Everything in One Place
+## finallllllll
 
 | Topic | Info / Explanation / Syntax |
 |-------|------------------------------|
