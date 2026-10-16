@@ -986,3 +986,122 @@ def multiply(x, y):
 
 def divide(x, y):
     if y ==
+
+
+
+
+
+
+
+
+
+
+
+
+Great question — this trips up a lot of people. Let me break it down clearly.
+
+---
+
+## `/` vs `//` in Python
+
+### `/` → **True Division** (returns a float, keeps the decimal)
+
+```python
+print(5 / 2)      # 2.5
+print(10 / 3)     # 3.3333333333333335
+print(6 / 2)      # 3.0   ← note: still a float, not int!
+print(7 / 7)      # 1.0
+```
+
+- **Always returns a `float`**, even if the division is exact.
+- This is "true" division — gives you the mathematically correct answer including decimals.
+
+---
+
+### `//` → **Floor Division** (drops the decimal, rounds DOWN)
+
+```python
+print(5 // 2)     # 2      (not 2.5)
+print(10 // 3)    # 3      (not 3.33)
+print(6 // 2)     # 3      ← int, since both operands are ints
+print(7 // 7)     # 1
+```
+
+- **Drops everything after the decimal point** — but not by rounding, by *flooring* (going toward negative infinity).
+
+---
+
+### ⚠️ Important: "Floor" ≠ "Truncate"
+
+For **positive numbers** they look the same, but for **negative numbers** they're different:
+
+```python
+print(-5 / 2)     # -2.5     (true division)
+print(-5 // 2)    # -3       ← floor goes DOWN, not toward zero!
+print(int(-5 / 2))  # -2     ← this truncates (toward zero)
+```
+
+| Expression | Result | Why |
+|------------|--------|-----|
+| `5 / 2` | `2.5` | True division |
+| `5 // 2` | `2` | Floor down |
+| `-5 / 2` | `-2.5` | True division |
+| `-5 // 2` | `-3` | Floor down (not -2!) |
+| `int(-5 / 2)` | `-2` | Truncate toward zero |
+
+---
+
+### 🎯 Practical Uses
+
+**`/` — when you need the exact answer:**
+```python
+average = sum(scores) / len(scores)      # 87.5
+price_per_item = total / quantity        # 12.99
+```
+
+**`//` — when you need a whole number:**
+```python
+# Split items into pages
+pages = total_items // items_per_page    # 5 (ignore partial page)
+
+# Convert seconds to minutes
+minutes = total_seconds // 60            # 3
+
+# Index math (avoid float indices — lists need ints)
+mid = len(arr) // 2                      # 5 for a 10-item list
+arr[mid]                                 # works; arr[len(arr)/2] would fail
+```
+
+---
+
+### 💡 Quick memory trick
+
+| Operator | Name | Result | Memory hook |
+|----------|------|--------|-------------|
+| `/` | True division | **float** (has decimal) | "True" = tells the whole truth |
+| `//` | Floor division | **int** (rounded down) | "Floor" = flat, no decimals |
+
+---
+
+### 🧪 Try it yourself
+
+```python
+for x, y in [(5, 2), (10, 3), (-5, 2), (7, 2)]:
+    print(f"{x} / {y} = {x / y}  |  {x} // {y} = {x // y}")
+```
+
+Output:
+```
+5 / 2 = 2.5   |  5 // 2 = 2
+10 / 3 = 3.3333333333333335  |  10 // 3 = 3
+-5 / 2 = -2.5 |  -5 // 2 = -3
+7 / 2 = 3.5   |  7 // 2 = 3
+```
+
+---
+
+### 📝 One-line summary for your reference doc
+
+> **`/` gives you the exact mathematical answer as a float; `//` gives you the whole-number part, rounded DOWN (not truncated) — so for negatives it goes further from zero.**
+
+That should clear it up. Want me to continue pasting the rest of the GitHub markdown file (I was cut off around the Unit Testing section)?
