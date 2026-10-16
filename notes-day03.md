@@ -226,7 +226,22 @@ winget install --id=flawiddsouza.Restfox -e
 now open restful fox
 on the left side right click make a new folder called twillio
 inside create a folder for incoming messages
-now refer message resource and go to list all messages
+now refer message resource and go to list all messages by matching filter criteria
+
+<img width="640" height="317" alt="image" src="https://github.com/user-attachments/assets/93905c21-a6a9-456b-abe3-f662fc59b222" />
+
+just copy this link 
+<img width="640" height="317" alt="image" src="https://github.com/user-attachments/assets/ec25a113-3019-49ae-a44b-fea8ec36c825" />
+ye link ko modify karna 
+to this form 
+https://api.twilio.com/2010-04-01/Accounts/:TWILIO_ACCOUNT_SID/Messages.json?To=+17372508034 &PageSize=20
+
+<img width="638" height="329" alt="image" src="https://github.com/user-attachments/assets/9beffafc-f134-482a-940f-65a315c7a9f2" />
+then u get an error as shown in image 
+
+
+
+
 
 
 
