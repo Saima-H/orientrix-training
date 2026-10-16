@@ -9,6 +9,158 @@ DBMS PERFORMS CRUD ON DB
 # Joins
 <img width="695" height="900" alt="image" src="https://github.com/user-attachments/assets/c5916bf2-4a3e-4d09-932b-e7af810bf3ff" />
 
+go to mysql work bench then execute these queries 
+# SQL QUERIES
+
+-- 1. Create students table
+CREATE TABLE students (
+    student_id INT PRIMARY KEY AUTO_INCREMENT,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(20) NOT NULL,
+    birth_date DATE,
+    gender VARCHAR(1)
+);
+
+-- 2. Create classes table
+CREATE TABLE classes (
+    class_id INT PRIMARY KEY AUTO_INCREMENT,
+    class_name VARCHAR(30) NOT NULL,
+    teacher_name VARCHAR(40)
+);
+
+-- 3. Create marks table with composite primary key and foreign keys
+CREATE TABLE marks (
+    student_id INT,
+    class_id INT,
+    marks_obtained DECIMAL(5,2),
+    PRIMARY KEY (student_id, class_id),
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(class_id) ON DELETE CASCADE
+);
+
+-- 4. Insert sample students
+INSERT INTO students (first_name, last_name, birth_date, gender) VALUES
+('Jack', 'Ryan', '2005-03-12', 'M'),
+('Kate', 'Sharma', '2004-07-21', 'F'),
+('Claire', 'Dsouza', '2005-01-05', 'F'),
+('Mike', 'Verma', '2004-11-30', 'M'),
+('Ayesha', 'Khan', '2005-09-14', 'F');
+
+-- 5. Insert sample classes
+INSERT INTO classes (class_name, teacher_name) VALUES
+('Mathematics', 'Mr. Rao'),
+('Biology', 'Ms. Kapoor'),
+('Computer Science', 'Mr. Iyer'),
+('Chemistry', 'Ms. Nair');
+
+-- 6. Insert sample marks
+INSERT INTO marks (student_id, class_id, marks_obtained) VALUES
+(1, 1, 88.50), (1, 2, 76.00), (1, 3, 92.00),
+(2, 1, 91.00), (2, 2, 85.50), (2, 4, 78.00),
+(3, 2, 69.00), (3, 4, 74.50),
+(4, 1, 55.00), (4, 3, 81.00),
+(5, 1, 95.00), (5, 2, 89.00), (5, 3, 97.50);
+
+-- 7. Select all students
+SELECT * FROM students;
+
+-- 8. Select specific columns
+SELECT first_name, last_name FROM students;
+
+-- 9. Select female students using WHERE
+SELECT * FROM students WHERE gender = 'F';
+
+-- 10. Select females born after 2004 using WHERE with AND
+SELECT * FROM students WHERE gender = 'F' AND birth_date > '2004-12-31';
+
+-- 11. Select specific names using WHERE with IN
+SELECT * FROM students WHERE first_name IN ('Jack', 'Mike', 'Ayesha');
+
+-- 12. Select marks above 80 using WHERE comparison
+SELECT * FROM marks WHERE marks_obtained > 80;
+
+-- 13. Select students ordered by last name
+SELECT * FROM students ORDER BY last_name ASC;
+
+-- 14. Select top 3 marks ordered descending
+SELECT * FROM marks ORDER BY marks_obtained DESC LIMIT 3;
+
+-- 15. Average marks per class using GROUP BY
+SELECT class_id, AVG(marks_obtained) AS avg_marks FROM marks GROUP BY class_id;
+
+-- 16. Count students per gender using GROUP BY
+SELECT gender, COUNT(*) AS total FROM students GROUP BY gender;
+
+-- 17. INNER JOIN: student names with class names and marks
+SELECT s.first_name, s.last_name, c.class_name, m.marks_obtained
+FROM marks m
+JOIN students s ON m.student_id = s.student_id
+JOIN classes c ON m.class_id = c.class_id
+ORDER BY s.first_name, c.class_name;
+
+-- 18. LEFT JOIN: all students with their marks (NULL if no marks)
+SELECT s.first_name, s.last_name, m.marks_obtained
+FROM students s
+LEFT JOIN marks m ON s.student_id = m.student_id
+ORDER BY s.first_name;
+
+-- 19. RIGHT JOIN: all classes with marks (NULL if no marks)
+SELECT c.class_name, m.marks_obtained
+FROM marks m
+RIGHT JOIN classes c ON m.class_id = c.class_id
+ORDER BY c.class_name;
+
+-- 20. INNER JOIN + GROUP BY: average marks per student
+SELECT s.first_name, s.last_name, AVG(m.marks_obtained) AS avg_marks
+FROM students s
+JOIN marks m ON s.student_id = m.student_id
+GROUP BY s.student_id, s.first_name, s.last_name
+ORDER BY avg_marks DESC;
+
+-- 21. INNER JOIN + WHERE: students with marks above 85
+SELECT s.first_name, s.last_name, c.class_name, m.marks_obtained
+FROM students s
+JOIN marks m ON s.student_id = m.student_id
+JOIN classes c ON m.class_id = c.class_id
+WHERE m.marks_obtained > 85
+ORDER BY m.marks_obtained DESC;
+
+-- 22. INNER JOIN + GROUP BY: total students per class
+SELECT c.class_name, COUNT(*) AS total_students
+FROM marks m
+JOIN classes c ON m.class_id = c.class_id
+GROUP BY c.class_name
+ORDER BY total_students DESC;
+
+-- 23. INNER JOIN + WHERE: marks for Mathematics class only
+SELECT s.first_name, s.last_name, c.class_name, m.marks_obtained
+FROM students s
+JOIN marks m ON s.student_id = m.student_id
+JOIN classes c ON m.class_id = c.class_id
+WHERE c.class_name = 'Mathematics'
+ORDER BY m.marks_obtained DESC;
+
+-- 24. INNER JOIN + WHERE: female students with their marks
+SELECT s.first_name, s.last_name, c.class_name, m.marks_obtained
+FROM students s
+JOIN marks m ON s.student_id = m.student_id
+JOIN classes c ON m.class_id = c.class_id
+WHERE s.gender = 'F'
+ORDER BY m.marks_obtained DESC;
+
+-- 25. INNER JOIN + GROUP BY: highest and lowest marks per class
+SELECT c.class_name, MAX(m.marks_obtained) AS highest, MIN(m.marks_obtained) AS lowest
+FROM marks m
+JOIN classes c ON m.class_id = c.class_id
+GROUP BY c.class_name;
+
+-- 26. INNER JOIN + GROUP BY: number of classes taken per student
+SELECT s.first_name, s.last_name, COUNT(m.class_id) AS classes_taken
+FROM students s
+JOIN marks m ON s.student_id = m.student_id
+GROUP BY s.student_id, s.first_name, s.last_name
+ORDER BY classes_taken DESC;
+
 # Python 
 
 ## finallllllll
