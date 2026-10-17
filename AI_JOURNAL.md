@@ -451,12 +451,3 @@ flowchart LR
 ```
 
 ---
-
-## How to Use
-
-1. Create `README.md` in your `idea-vault/` repo
-2. Paste any/all of the blocks above **including** the triple backticks
-3. `git add README.md && git commit -m "Add architecture diagrams" && git push`
-4. GitHub renders the diagrams automatically
-
-**Recommended order in README:** System Architecture → User Flow → Database Schema → Simple Overview (or drop the last one if you want it clean).
