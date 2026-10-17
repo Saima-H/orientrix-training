@@ -30,11 +30,6 @@
 
 ---
 
-## 2. Complete Flowchart — GitHub-Safe Mermaid
-
-Copy this block exactly into your `.md` file. Every label is quoted, no reserved characters inside labels.
-
-````markdown
 ```mermaid
 flowchart TD
     A["Start - FastAPI Crash Course"] --> B["Install dependencies<br/>pip install fastapi<br/>pip install uvicorn"]
@@ -98,20 +93,7 @@ flowchart TD
 ```
 ````
 
-### Why this now renders on GitHub
 
-| Problem in old version | Fix in new version |
-|---|---|
-| `A([Start...])` — stadium shape with `:` inside | `A["Start - FastAPI Crash Course"]` — plain quoted node |
-| `{"question?"}` with `?` inside | `{"ID already exists"}` — no punctuation |
-| `@app.get("/")` inside label | `app.get root path` — no slashes/at-signs |
-| `?name=john` inside label | `URL uses question mark name equals john` |
-| `{id}` `{student_id}` inside label | `student_id` plain text |
-| `|Yes|` was fine, but surrounding labels had `<>` | Kept `\|Yes\|` edges, removed `<>` from all labels |
-| Line breaks without quotes | `<br/>` inside quoted labels — safe |
-| `style` with color names containing `#` | Kept `#hex` — this IS allowed in `style` lines (not labels) |
-
----
 
 ## 3. All Code From the Video
 
