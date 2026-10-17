@@ -359,5 +359,8 @@ def delete_student(student_id: int):
 
 <img width="640" height="313" alt="image" src="https://github.com/user-attachments/assets/0b149909-4b59-4c08-9fad-944dbfdd340f" />
 
+<img width="1275" height="624" alt="image" src="https://github.com/user-attachments/assets/7a09e65d-4e2d-4163-a11e-21c6f1c3ebe3" />
+
+
 
 
