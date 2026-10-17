@@ -461,9 +461,9 @@ Forget the whole 6-day plan for a second. **We're only doing today.** Here's exa
 
 ---
 
-## Before You Touch Code: 5-Minute Setup Check
+##  5-Minute Setup Check
 
-Answer these in your head:
+
 
 - [ ] Do you have **Python** installed? (`python --version` in terminal)
 - [ ] Do you have **Node.js** installed? (`node --version`)
@@ -486,15 +486,7 @@ If all ✅ → proceed below.
 
 ---
 
-## Day 1 Goal (Only One Goal)
 
-> **By end of today: a GitHub repo called `idea-vault` with 3 files committed, and a clear picture of what you're building.**
-
-That's it. No code. No FastAPI. No React. **Just setup + planning + first commit.**
-
-Why so small? Because **momentum > ambition**. A committed repo on Day 1 is a psychological win. Skipping this and jumping to code is why 90% of people quit by Day 3.
-
----
 
 ## Step 1: Create the Project Folder (2 min)
 
@@ -568,14 +560,7 @@ flowchart LR
 - [ ] Day 6: Tests + docs
 ```
 
-### File 2: `notes/day1.md`
-
-First create the folder: `mkdir notes`
-
-Then create `notes/day1.md`:
-
-```markdown
-# Day 1 Notes — [Your Name], 17 Oct 2026
+# NOTES
 
 ## What I Set Up Today
 - Created `idea-vault` repo
