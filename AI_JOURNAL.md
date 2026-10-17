@@ -893,33 +893,87 @@ By end of Day 1, you have:
 ✅ 1 of 3 required commits done
 ✅ A clear mental model of what you're building
 
-**No code yet. That's intentional.** Code without a plan is chaos. You now have a plan.
 
----
 
-## What Tomorrow Looks Like (Peek, Don't Do It Yet)
+# do we actually write sql queries?
 
-Day 2 = **Database schema + first SQL queries.**
 
-You'll:
-1. Open Cursor
-2. Ask AI: *"Create SQL schema for an app with users, ideas, and tags. Ideas can have many tags. Use SQLite syntax."*
-3. Review what AI gives you — does it make sense?
-4. Write `sql-practice.sql` with the schema + 20 queries
-5. Commit (that's commit #2 of 3)
+totally understand why you are confused. Let's take a step back. You asked the best question of the entire project:
 
-But **not now.** Do today's work first.
+"In reality, who will write the query and who will fetch it?"
 
----
+Here is the exact answer: The Backend (FastAPI) does both.
 
-## Your Homework (Right Now)
+Let me explain how it works in reality vs. how it works in practice.
+1. The Reality: Nobody types SQL in the final app.
+In modern software development, we don't actually write SELECT * FROM ideas in the final app. We use tools like SQLAlchemy (an ORM - Object Relational Mapper).
 
-1. ✅ Run **Steps 1–6** above
-2. ✅ Reply to me with:
-   - "Done" + your GitHub repo link
-   - Any errors you hit (paste them, I'll debug)
-   - Any term in the README you don't fully get
+When the frontend (Next.js) says "I need all the ideas," the Backend (FastAPI) receives that request. FastAPI doesn't run raw SQL; it runs a Python command like db.query(Idea).all(). SQLAlchemy takes that Python command and automatically translates it into SQL behind the scenes, sends it to the database, fetches the data, and sends it back to the frontend.
 
-**Once I see your repo is live, we start Day 2 — the database schema.** That's where it gets fun.
+2. The Practice: Why did we write sql-practice.sql?
+Even though SQLAlchemy writes the SQL automatically, you still have to know SQL. Why?
+
+Because when the app is slow, you need to look at the SQL and see why it's slow.
+
+Because when data gets messed up, you need to know how to go into the database and fix it manually.
+
+
+
+
+
+# how sqlalchemy works
+
+
+====================================================================
+PHASE 1: YOU WRITE PYTHON CODE (The Request)
+====================================================================
+            👤 You type:  db.query(Idea).all()
+                 |
+                 v
+     Python doesn't understand SQL. 
+     It only understands Python code.
+
+====================================================================
+PHASE 2: SQLALCHEMY (The Translator)
+====================================================================
+                 |
+                 v
+            🤖 SQLALCHEMY
+                 |
+                 |-- 1. Reads your Python code: "They want 'Idea' objects."
+                 |-- 2. Checks your Python Class: "Ah, 'Idea' means the 'ideas' table."
+                 |
+                 v
+     Generates Raw SQL:  "SELECT * FROM ideas;"
+
+====================================================================
+PHASE 3: THE DATABASE (The Chef)
+====================================================================
+                 |
+                 | (Sends the SQL string over the wire)
+                 v
+            🗄️ DATABASE
+                 |
+                 |-- 1. Reads the SQL
+                 |-- 2. Finds the data on the hard drive
+                 |
+                 v
+     Sends raw data back:  [ (1, 'Habit app'), (2, 'Pasta') ]
+
+====================================================================
+PHASE 4: BACK TO PYTHON (The Delivery)
+====================================================================
+                 |
+                 | (Sends the raw data back to SQLAlchemy)
+                 v
+            🤖 SQLALCHEMY
+                 |
+                 |-- 1. Catches the raw data
+                 |-- 2. Wraps it in a Python Class (Idea)
+                 |
+                 v
+            👤 You get back a nice, clean list:
+               idea[0].id == 1
+               idea[0].content == 'Habit app'
 
 
