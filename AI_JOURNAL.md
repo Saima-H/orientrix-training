@@ -473,6 +473,15 @@ Answer these in your head:
 
 If any is missing, install it first. Reply and I'll walk you through whichever is missing.
 
+nstall Cursor (Recommended, Simplest)
+Cursor is free to download and install, just like a regular software.
+
+Open cursor.com/download
+
+Select the installer for your system (Windows .exe, Mac .dmg, Linux .AppImage or package)
+
+After installation, open it and sign up for a free account to use it
+
 If all ✅ → proceed below.
 
 ---
