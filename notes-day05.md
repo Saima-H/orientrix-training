@@ -1,4 +1,4 @@
-
+# FastAPI Crash Course 
 
 ## 1. Topic → Info Table
 
@@ -29,6 +29,8 @@
 | 23 | **DELETE method** | `@app.delete("/delete-student/{student_id}")` — check existence, then `del students[student_id]`, return success message. |
 
 ---
+
+## 2. Complete Flowchart 
 
 ```mermaid
 flowchart TD
@@ -91,13 +93,13 @@ flowchart TD
     style L fill:#FF5722,color:#ffffff
     style M fill:#9C27B0,color:#ffffff
 ```
-````
 
-```
+---
 
 ## 3. All Code From the Video
 
 ### 3.1 Installation (terminal)
+
 ```bash
 pip install fastapi
 pip install uvicorn
@@ -106,6 +108,7 @@ uvicorn myapi:app --reload
 ```
 
 ### 3.2 First API — home route
+
 ```python
 from fastapi import FastAPI
 
@@ -117,6 +120,7 @@ def index():
 ```
 
 ### 3.3 In-memory "database" (student dict)
+
 ```python
 students = {
     1: {
@@ -128,6 +132,7 @@ students = {
 ```
 
 ### 3.4 Path parameter — get student by ID
+
 ```python
 @app.get("/get-student/{student_id}")
 def get_student(student_id: int):
@@ -135,6 +140,7 @@ def get_student(student_id: int):
 ```
 
 ### 3.5 Path parameter with `Path()` metadata & validation
+
 ```python
 from fastapi import FastAPI, Path
 
@@ -145,9 +151,11 @@ def get_student(
 ):
     return students[student_id]
 ```
+
 > `gt=0, lt=3` → only 1 and 2 allowed. Out-of-range gives a validation error in `/docs`.
 
 ### 3.6 Query parameter — get by name
+
 ```python
 @app.get("/get-by-name")
 def get_student(*, name: str):
@@ -158,6 +166,7 @@ def get_student(*, name: str):
 ```
 
 ### 3.7 Optional query parameter (best practice)
+
 ```python
 from typing import Optional
 
@@ -168,9 +177,11 @@ def get_student(*, name: Optional[str] = None, test: int):
             return students[student_id]
     return {"Data": "Not found"}
 ```
+
 > The `*,` makes everything after it keyword-only, fixing the "non-default argument follows default argument" error.
 
 ### 3.8 Combine path + query parameters
+
 ```python
 @app.get("/get-by-name/{student_id}")
 def get_student(*, student_id: int, name: Optional[str] = None, test: int):
@@ -179,9 +190,11 @@ def get_student(*, student_id: int, name: Optional[str] = None, test: int):
             return students[student_id]
     return {"Data": "Not found"}
 ```
+
 > `student_id` is in the route template (path param); `name`/`test` are function-only args (query params).
 
 ### 3.9 POST + Request Body — Pydantic models
+
 ```python
 from fastapi import FastAPI, Path
 from typing import Optional
@@ -201,6 +214,7 @@ class UpdateStudent(BaseModel):
 ```
 
 ### 3.10 POST — create student
+
 ```python
 @app.post("/create-student/{student_id}")
 def create_student(student_id: int, student: Student):
@@ -211,6 +225,7 @@ def create_student(student_id: int, student: Student):
 ```
 
 ### 3.11 PUT/PATCH — partial update with guards
+
 ```python
 @app.put("/update-student/{student_id}")
 def update_student(student_id: int, student: UpdateStudent):
@@ -230,6 +245,7 @@ def update_student(student_id: int, student: UpdateStudent):
 ```
 
 ### 3.12 DELETE — remove student
+
 ```python
 @app.delete("/delete-student/{student_id}")
 def delete_student(student_id: int):
@@ -241,7 +257,7 @@ def delete_student(student_id: int):
 
 ---
 
-## 4. Key Points 
+## 4. Key Points
 1. **FastAPI ≠ full-stack framework** — it's the app layer only; uvicorn is the ASGI server.
 2. **Decorators = routing** — `@app.<method>("/path")` binds a function to an HTTP verb + URL.
 3. **Type hints are the API contract** — `student_id: int` gives you validation + auto-docs for free.
@@ -253,4 +269,3 @@ def delete_student(student_id: int):
 9. **`/docs` is a superpower** — test endpoints with zero extra tooling (no Postman needed).
 
 ---
-
