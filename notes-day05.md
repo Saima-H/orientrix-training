@@ -269,3 +269,12 @@ def delete_student(student_id: int):
 9. **`/docs` is a superpower** — test endpoints with zero extra tooling (no Postman needed).
 
 ---
+<img width="805" height="671" alt="image" src="https://github.com/user-attachments/assets/6485bd35-92ee-49e9-b98a-51f5b08678af" />
+
+<img width="1279" height="678" alt="image" src="https://github.com/user-attachments/assets/29561b79-07d2-41b4-8832-5965791e8e27" />
+
+<img width="1279" height="636" alt="image" src="https://github.com/user-attachments/assets/393dded7-c752-4c12-b539-32fe4709e356" />
+
+<img width="640" height="313" alt="image" src="https://github.com/user-attachments/assets/0b149909-4b59-4c08-9fad-944dbfdd340f" />
+
+
