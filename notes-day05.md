@@ -96,7 +96,7 @@ flowchart TD
 
 ---
 
-## 3. All Code From the Video
+## 3. Code Snippets
 
 ### 3.1 Installation (terminal)
 
