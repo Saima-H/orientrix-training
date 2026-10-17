@@ -451,3 +451,278 @@ flowchart LR
 ```
 
 ---
+
+
+# START
+
+# Let's Start. Right Now. Day 1.
+
+Forget the whole 6-day plan for a second. **We're only doing today.** Here's exactly what to do, step by step, in order.
+
+---
+
+## Before You Touch Code: 5-Minute Setup Check
+
+Answer these in your head:
+
+- [ ] Do you have **Python** installed? (`python --version` in terminal)
+- [ ] Do you have **Node.js** installed? (`node --version`)
+- [ ] Do you have **Git** installed? (`git --version`)
+- [ ] Do you have **Cursor** or **Windsurf** installed? (AI editor)
+- [ ] Do you have a **GitHub account**?
+
+If any is missing, install it first. Reply and I'll walk you through whichever is missing.
+
+If all ✅ → proceed below.
+
+---
+
+## Day 1 Goal (Only One Goal)
+
+> **By end of today: a GitHub repo called `idea-vault` with 3 files committed, and a clear picture of what you're building.**
+
+That's it. No code. No FastAPI. No React. **Just setup + planning + first commit.**
+
+Why so small? Because **momentum > ambition**. A committed repo on Day 1 is a psychological win. Skipping this and jumping to code is why 90% of people quit by Day 3.
+
+---
+
+## Step 1: Create the Project Folder (2 min)
+
+Open your terminal. Run these **exactly**:
+
+```bash
+mkdir idea-vault
+cd idea-vault
+```
+
+You're now inside an empty folder called `idea-vault`.
+
+---
+
+## Step 2: Initialize Git (1 min)
+
+```bash
+git init
+```
+
+You'll see: `Initialized empty Git repository in .../idea-vault/.git/`
+
+That's it. Git is now tracking this folder.
+
+---
+
+## Step 3: Create Your First 3 Files (10 min)
+
+You need exactly **3 files** today:
+
+### File 1: `README.md`
+
+Create the file and paste this:
+
+```markdown
+# 💡 Idea Vault
+
+A personal app to save ideas and links, auto-tag them, and filter by tag.
+
+## Tech Stack
+- **Backend:** FastAPI (Python)
+- **Frontend:** Next.js (React)
+- **Database:** SQLite (dev) → PostgreSQL (prod)
+- **AI:** Mock NLP for tag generation
+
+## Status
+🚧 Day 1 — Project setup
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User([👤 User]) --> FE["Next.js :3000"]
+    FE --> CORS{{CORS Middleware}}
+    CORS --> BE["FastAPI :8000"]
+    BE --> DB[("Database")]
+    BE --> AI[🤖 Smart Tags]
+    AI --> BE
+    DB --> BE
+    BE --> CORS
+    CORS --> FE
+    FE --> User
+```
+
+## Deliverables Checklist
+- [ ] Day 1: Setup + notes
+- [ ] Day 2: Database schema
+- [ ] Day 3: Python + FastAPI basics
+- [ ] Day 4: Backend complete
+- [ ] Day 5: Frontend complete
+- [ ] Day 6: Tests + docs
+```
+
+### File 2: `notes/day1.md`
+
+First create the folder: `mkdir notes`
+
+Then create `notes/day1.md`:
+
+```markdown
+# Day 1 Notes — [Your Name], 17 Oct 2026
+
+## What I Set Up Today
+- Created `idea-vault` repo
+- Initialized Git
+- Wrote README + architecture diagram
+
+## What I Learned
+- Git basics: `git init`, `git add`, `git commit`
+- How the web works: browser (client) → API (server) → database
+- HTTP methods: GET (read), POST (create), DELETE (remove)
+
+## What I'm Building
+A personal "Idea Vault" — save ideas/URLs, auto-tag them, filter by tag.
+
+## What Confused Me (so far)
+1. What exactly does CORS mean?
+2. How do frontend and backend talk to each other?
+3. What is a port number?
+```
+
+### File 3: `.gitignore`
+
+This is **critical** — prevents committing junk. Create `.gitignore`:
+
+```
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node
+node_modules/
+.next/
+out/
+
+# Databases
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+```
+
+**Why this matters:** Without `.gitignore`, you'll commit `node_modules` (500MB of junk), API keys (security disaster), and cache files. **Do this now, not later.**
+
+---
+
+## Step 4: Your First Commit (2 min)
+
+```bash
+git add .
+git commit -m "Day 1: Initial project setup with README and notes"
+```
+
+Check it worked:
+
+```bash
+git log
+```
+
+You should see your commit.
+
+**🎉 You just made your first commit. This is Deliverable #1 (part 1 of 3) done.**
+
+---
+
+## Step 5: Push to GitHub (5 min)
+
+### 5a. Create the repo on GitHub
+
+1. Go to [github.com/new](https://github.com/new)
+2. **Repository name:** `idea-vault`
+3. **Visibility:** Public (recruiters can see it) or Private (only you)
+4. **DO NOT** check "Add a README" (you already have one)
+5. Click **Create repository**
+
+### 5b. Connect local → GitHub
+
+GitHub shows you commands. They look like:
+
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/idea-vault.git
+git branch -M main
+git push -u origin main
+```
+
+Copy-paste them one by one. Replace `YOUR_USERNAME` with your actual GitHub username.
+
+### 5c. Verify
+
+Refresh the GitHub page. You should see:
+- `README.md` (with a rendered flowchart!)
+- `notes/day1.md`
+- `.gitignore`
+
+**🎉 Your project is now live on GitHub.** Send yourself the link.
+
+---
+
+## Step 6: Read One Thing (10 min, no videos)
+
+You said no videos — good. **Read** this one short article:
+
+👉 **"How the Web Works" — MDN** → [https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/How_the_Web_works](https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/How_the_Web_works)
+
+Just read it. Don't take notes. Don't watch anything. It's 5 minutes.
+
+**Why?** Because tomorrow you'll build an API, and you need a mental model of client → server → response. That's the only concept you need today.
+
+---
+
+## What You Have Now
+
+By end of Day 1, you have:
+
+✅ A Git repo called `idea-vault`
+✅ A README with an architecture diagram
+✅ Day 1 notes committed
+✅ A `.gitignore` protecting you from future mistakes
+✅ Everything pushed to GitHub
+✅ 1 of 3 required commits done
+✅ A clear mental model of what you're building
+
+**No code yet. That's intentional.** Code without a plan is chaos. You now have a plan.
+
+---
+
+## What Tomorrow Looks Like (Peek, Don't Do It Yet)
+
+Day 2 = **Database schema + first SQL queries.**
+
+You'll:
+1. Open Cursor
+2. Ask AI: *"Create SQL schema for an app with users, ideas, and tags. Ideas can have many tags. Use SQLite syntax."*
+3. Review what AI gives you — does it make sense?
+4. Write `sql-practice.sql` with the schema + 20 queries
+5. Commit (that's commit #2 of 3)
+
+But **not now.** Do today's work first.
+
+---
+
+## Your Homework (Right Now)
+
+1. ✅ Run **Steps 1–6** above
+2. ✅ Reply to me with:
+   - "Done" + your GitHub repo link
+   - Any errors you hit (paste them, I'll debug)
+   - Any term in the README you don't fully get
+
+**Once I see your repo is live, we start Day 2 — the database schema.** That's where it gets fun.
+
+
