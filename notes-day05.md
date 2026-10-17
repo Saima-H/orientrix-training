@@ -34,7 +34,7 @@
 
 ```mermaid
 flowchart TD
-    A["Start - FastAPI Crash Course"] --> B["Install dependencies<br/>pip install fastapi<br/>pip install uvicorn"]
+    A["Start"] --> B["Install dependencies<br/>pip install fastapi<br/>pip install uvicorn"]
     B --> C["Create project<br/>folder plus myapi.py<br/>cd into folder"]
     C --> D["Create app instance<br/>from fastapi import FastAPI<br/>app = FastAPI"]
     D --> E["Define first GET route<br/>app.get root path"]
