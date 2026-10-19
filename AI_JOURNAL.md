@@ -1130,6 +1130,7 @@ git push
 
 
 
+<img width="1275" height="640" alt="image" src="https://github.com/user-attachments/assets/0f56c3ee-d44f-49aa-beaa-8ebd316c8b4b" />
 
 
 
@@ -1260,10 +1261,9 @@ You just added a smart feature and documented your AI process.
 ---
 
 
-<img width="1275" height="633" alt="image" src="https://github.com/user-attachments/assets/79e116e2-0fd9-43b4-8a7b-46cf8219940e" />
 
 
 so basically u go to post and follow the steps , i click ed post 3 times after that when i clicked get then try it out i got
+<img width="1275" height="633" alt="image" src="https://github.com/user-attachments/assets/79e116e2-0fd9-43b4-8a7b-46cf8219940e" />
 
-<img width="1275" height="640" alt="image" src="https://github.com/user-attachments/assets/0f56c3ee-d44f-49aa-beaa-8ebd316c8b4b" />
 
