@@ -1125,4 +1125,9 @@ git push
 
 <img width="638" height="296" alt="image" src="https://github.com/user-attachments/assets/49f47f4e-398f-4cf2-8698-69740ef22816" />
 
+<img width="639" height="296" alt="image" src="https://github.com/user-attachments/assets/96d8b6b7-dd47-47c4-a5d5-cf3407be88d7" />
+
+so basically u go to post and follow the steps , i click ed post 3 times after that when i clicked get then try it out i got
+
+<img width="1275" height="640" alt="image" src="https://github.com/user-attachments/assets/0f56c3ee-d44f-49aa-beaa-8ebd316c8b4b" />
 
