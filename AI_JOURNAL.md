@@ -1304,3 +1304,239 @@ Instead of buying raw wood and nailing every board yourself, Next.js gives you p
 *(And just to complete the picture: **React** is the library that lets you build UI components like buttons and forms. **Next.js** is the framework that makes React work really well).*
 
 ---
+
+# 🚀 Day 5: The Next.js Frontend (From Scratch)
+
+
+---
+
+### Step 1: Setup the Frontend Folder
+Open a terminal and make sure you are in the root of your project (`C:\Users\samh7\idea-vault`).
+
+Run this command to create the Next.js app:
+```bash
+npx create-next-app@latest frontend
+```
+
+Answer the prompts exactly like this (use arrow keys and press Enter):
+*   Would you like to use **TypeScript**? -> **Yes**
+*   Would you like to use **ESLint**? -> **Yes**
+*   Would you like to use **Tailwind CSS**? -> **Yes**
+*   Would you like to use **`src/` directory**? -> **No**
+*   Would you like to use **App Router**? -> **Yes**
+*   Would you like to customize the default import alias? -> **No**
+
+*(This will take 1-2 minutes to download and install).*
+
+### Step 2: Start the Frontend Server
+Once it finishes, go into the new folder and start the development server:
+```bash
+cd frontend
+npm run dev
+```
+
+Open your browser and go to `http://localhost:3000`. You should see the Next.js default welcome page.
+*(Leave this terminal running. Your frontend is now live on port 3000, and your backend is on port 8000).*
+
+---
+
+### Step 3: Write the Dashboard UI
+Open the `frontend` folder in your code editor (VS Code or Cursor).
+Open the file `app/page.tsx` and **delete everything inside it**.
+
+Copy and paste this exact code into `app/page.tsx`. Read the green comments to understand what the code is doing.
+
+```tsx
+"use client"; // This tells Next.js this file runs in the browser
+
+import { useState, useEffect } from "react";
+
+// 1. Define the TypeScript interface (What an Idea looks like)
+interface Idea {
+  id: number;
+  content: string;
+  url: string | null;
+}
+
+export default function Home() {
+  // 2. Set up State (Variables that update the screen)
+  const [ideas, setIdeas] = useState<Idea[]>([]); // Array of ideas
+  const [content, setContent] = useState("");     // The text input
+  const [url, setUrl] = useState("");             // The URL input
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 3. Fetch ideas from FastAPI
+  const fetchIdeas = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/ideas");
+      const data = await response.json();
+      setIdeas(data);
+    } catch (error) {
+      console.error("Failed to fetch ideas:", error);
+    }
+  };
+
+  // Run fetchIdeas once when the page loads
+  useEffect(() => {
+    fetchIdeas();
+  }, []);
+
+  // 4. Handle the form submission (Add a new idea)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Stop page refresh
+    if (!content) return; // Don't submit empty ideas
+
+    setIsLoading(true);
+
+    try {
+      // Send data to FastAPI
+      await fetch("http://127.0.0.1:8000/ideas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content, url: url || null }),
+      });
+
+      // Clear the form
+      setContent("");
+      setUrl("");
+      
+      // Refresh the list
+      await fetchIdeas();
+    } catch (error) {
+      console.error("Failed to add idea:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 5. The UI (HTML + Tailwind CSS)
+  return (
+    <main className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-4xl font-bold text-blue-400 mb-8">💡 Idea Vault</h1>
+
+        {/* ADD IDEA FORM */}
+        <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Add a New Idea</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm text-gray-400 mb-1">Idea Content</label>
+            <textarea
+              className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm text-gray-400 mb-1">URL (Optional)</label>
+            <input
+              type="url"
+              className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition duration-200"
+          >
+            {isLoading ? "Saving..." : "Save Idea"}
+          </button>
+        </form>
+
+        {/* IDEAS LIST */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Your Ideas ({ideas.length})</h2>
+          
+          {ideas.length === 0 ? (
+            <p className="text-gray-400">No ideas yet. Add one above!</p>
+          ) : (
+            <div className="space-y-4">
+              {ideas.map((idea) => (
+                <div key={idea.id} className="bg-gray-800 p-5 rounded-lg border border-gray-700">
+                  <p className="text-lg mb-2">{idea.content}</p>
+                  
+                  {idea.url && (
+                    <a 
+                      href={idea.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline text-sm break-all"
+                    >
+                      {idea.url}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+---
+
+### Step 4: The CORS Error (You must do this)
+1. Make sure your FastAPI backend is running in a **different terminal window**.
+2. Go to `http://localhost:3000` in your browser.
+3. Type a new idea and click **Save Idea**.
+4. **It will fail.** Open Chrome DevTools (Right click -> Inspect -> Console). You will see a red error about **CORS policy**.
+
+**To fix it:**
+1. Open your `backend/main.py` file.
+2. At the very top, add this import:
+   ```python
+   from fastapi.middleware.cors import CORSMiddleware
+   ```
+3. Right under `app = FastAPI()`, add this block:
+   ```python
+   app.add_middleware(
+       CORSMiddleware,
+       allow_origins=["http://localhost:3000"], # Allow Next.js to connect
+       allow_credentials=True,
+       allow_methods=["*"],
+       allow_headers=["*"],
+   )
+   ```
+4. Save the file (Uvicorn will auto-restart).
+5. Go back to `http://localhost:3000` and click **Save Idea** again. **It works!** 
+
+---
+
+### Step 5: Update your AI_JOURNAL
+Open `AI_JOURNAL.md` and document the CORS error. 
+*(Note: This is required by your assignment!)*
+
+```markdown
+### Day 5: The CORS Blunder
+**Error Encountered:** When trying to submit an idea from Next.js (localhost:3000) to FastAPI (localhost:8000), the browser blocked it with a CORS policy error.
+**Fix:** Imported `CORSMiddleware` in `main.py` and allowed `http://localhost:3000`. 
+**Lesson:** Browsers block requests between different ports for security. Middleware fixes this.
+```
+
+---
+
+### Step 6: Commit to GitHub
+1. Stop both servers (`Ctrl+C` in both terminals).
+2. Open a new terminal in the root `idea-vault` folder.
+3. Run:
+   ```bash
+   git add .
+   git commit -m "Day 5: Next.js Frontend and CORS fix"
+   git push
+   ```
+
+---
+
