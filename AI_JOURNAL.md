@@ -1539,4 +1539,27 @@ Open `AI_JOURNAL.md` and document the CORS error.
    ```
 
 ---
+Great question! TypeScript doesn't run in the browser. Browsers only understand JavaScript. So how does it work?
 
+### The Process: "Compilation" (or Transpilation)
+
+When you write TypeScript (`.ts` or `.tsx`), a tool called a **Compiler** (specifically `tsc` or a bundler like Vite/SWC) steps in before your code ever reaches the browser.
+
+Here is the 3-step flow:
+
+1. **You write:** `const name: string = "Saima";`
+2. **The Compiler checks:** It looks at the types. If you made a mistake (like assigning a number to a string), it throws a red error in your editor.
+3. **The Compiler strips:** It physically **deletes** all the TypeScript syntax (the types, the interfaces) and outputs clean JavaScript:
+   `const name = "Saima";`
+
+### Why Next.js makes this invisible to you
+Normally, you have to run a command manually to convert TS to JS. But **Next.js does this automatically**. 
+
+When you run `npm run dev` in your `frontend` folder:
+1. Next.js sees your `.tsx` files.
+2. It instantly compiles them to JavaScript in the background.
+3. It feeds that JavaScript to your browser.
+
+**You never have to worry about the conversion.** You just write TypeScript, and Next.js handles the magic of turning it into JavaScript for the browser to read.
+
+*(Analogy: TypeScript is like a blueprint with strict measurements. The Compiler is the builder who reads the blueprint and builds the actual house (JavaScript) that people can walk into.)*
