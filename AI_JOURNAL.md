@@ -1,3 +1,23 @@
+# proposed sys arch
+## 📐 System Architecture
+
+```mermaid
+flowchart LR
+    User([👤 User]) -->|Opens browser| FE["Next.js Frontend :3000<br/>Dashboard · Add Form · Filter"]
+    FE -->|HTTP Request<br/>GET / POST / DELETE| CORS{{CORS Middleware}}
+    CORS --> BE["FastAPI Backend :8000<br/>CRUD + Smart Endpoint"]
+    BE -->|SQL Query| DB[("SQLite(initially later update to postgresql) Database<br/>ideas · tags · idea_tags")]
+    BE -->|If tags requested| AI{"Smart Tag<br/>Generator"}
+    AI -->|Mock NLP or| LLM[LLM API<br/>OpenAI / Claude]
+    DB -->|Return data| BE
+    BE -->|JSON Response| CORS
+    CORS --> FE
+    FE -->|Rendered UI| User
+```
+
+
+
+
 # is this the best way??????????????????????????????????????? other architectures for the same project
 Here are the 5 Mermaid flowcharts for the architectures we discussed. You can paste these directly into your `README.md` (or a new file like `ADVANCED_ARCHITECTURE.md` in your GitHub repo). 
 
