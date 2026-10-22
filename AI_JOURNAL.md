@@ -19,7 +19,6 @@ flowchart LR
 
 
 # is this the best way??????????????????????????????????????? other architectures for the same project
-Here are the 5 Mermaid flowcharts for the architectures we discussed. You can paste these directly into your `README.md` (or a new file like `ADVANCED_ARCHITECTURE.md` in your GitHub repo). 
 
 At the bottom, I will tell you which one is the **best** for your specific project.
 
@@ -122,7 +121,7 @@ Even though Serverless (#1) is the "smartest" architecture, **you cannot use it 
 
 Therefore, your current architecture (**Next.js + FastAPI + Supabase**) is the **perfect** architecture for this specific assignment. 
 
-You can add these 5 flowcharts to your GitHub README as a "Future Improvements / Scaling" section. It will make you look like a Senior Engineer who understands how to scale an app from 10 users to 10 million!
+
 
 # IDEA VAULT:
 
