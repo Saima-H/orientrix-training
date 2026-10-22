@@ -2197,8 +2197,245 @@ git commit -m "Day 6: QA Testing, Postman collection, test cases, and bug report
 git push
 ```
 
-**Let me know when you've pushed Day 5 and 6!** 
+# 🚀 Day 7: Supabase, Authentication, and Row Level Security (RLS)
 
+Welcome to Week 2! This is where you level up from a "local app" to a **production-grade cloud app**.
+
+Today's goals from the assignment:
+1. **Database Integration:** Move from local SQLite to Supabase (Cloud PostgreSQL).
+2. **Authentication:** Add Sign-up and Login using Supabase Auth.
+3. **User-specific ideas:** Ensure users only see their own data.
+4. **Row Level Security (RLS):** Enforce these rules directly in the database.
+
+Because this is a big topic, we will break it into three parts:
+*   **Part A:** Set up Supabase and move your data.
+*   **Part B:** Update the backend to handle Users.
+*   **Part C:** Build the Login UI and connect it all.
+
+Let’s go step-by-step.
+
+---
+
+## Part A: Supabase Setup
+
+### Step 1: Create your Supabase Project
+1. Go to **[supabase.com](https://supabase.com/)** and sign up (use GitHub).
+2. Click **New Project**.
+3. Name: `idea-vault`.
+4. Database Password: Generate a strong password and **save it**.
+5. Region: Choose the closest to you.
+6. Click **Create new project** (takes ~2 mins).
+
+### Step 2: Get your Connection String
+1. Once created, go to **Project Settings** (gear icon) -> **Database**.
+2. Scroll to **Connection string** and select **URI**.
+3. Copy the string. It looks like: `postgresql://postgres.xxxx:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
+4. Replace `[YOUR-PASSWORD]` with your actual password.
+
+### Step 3: Connect FastAPI to Supabase
+1. Open `backend/database.py`.
+2. Replace the `SQLALCHEMY_DATABASE_URL` with your new string:
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+# PASTE YOUR SUPABASE URL HERE
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres.xxxx:YOUR_PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+```
+3. Install the Postgres driver in your backend terminal:
+   ```bash
+   pip install psycopg2-binary
+   ```
+
+---
+
+## Part B: Backend Updates for Users
+
+### Step 4: Add `user_id` to the Database
+We need to know who created which idea.
+1. Open `backend/main.py`.
+2. Update the `Idea` model to include `user_id`:
+```python
+class Idea(Base):
+    __tablename__ = "ideas"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False) # <-- ADD THIS
+    content = Column(String, nullable=False)
+    url = Column(String, nullable=True)
+    tags = Column(String, nullable=True)
+```
+
+### Step 5: Update Endpoints to Handle Users
+Update your Pydantic schema and API endpoints in `main.py`:
+
+```python
+# Update the Pydantic schema
+class IdeaCreate(BaseModel):
+    user_id: str  # <-- ADD THIS
+    content: str
+    url: str | None = None
+
+# Update the GET endpoint to filter by user
+@app.get("/ideas/{user_id}")
+def get_ideas(user_id: str):
+    db = SessionLocal()
+    ideas = db.query(Idea).filter(Idea.user_id == user_id).all()
+    db.close()
+    return ideas
+
+# Update the POST endpoint to save the user_id
+@app.post("/ideas")
+def create_idea(idea: IdeaCreate):
+    db = SessionLocal()
+    
+    # ... (Keep your Mock NLP tag logic here) ...
+    # (Make sure you still have the code that generates tags_string)
+    
+    new_idea = Idea(
+        user_id=idea.user_id,  # <-- ADD THIS
+        content=idea.content, 
+        url=idea.url, 
+        tags=tags_string
+    )
+    db.add(new_idea)
+    db.commit()
+    db.refresh(new_idea)
+    db.close()
+    return new_idea
+```
+
+### Step 6: Create Test Users in Supabase
+1. In Supabase, click the **Authentication** icon (lock).
+2. Click **Add User** -> **Create New User**.
+3. Create two users:
+   *   **User A:** `saima@test.com` / password: `password123`
+   *   **User B:** `alex@test.com` / password: `password123`
+
+### Step 7: Reset the Database
+Because we changed the table structure, go to Supabase -> **Table Editor**. Delete the `ideas` table if it exists. 
+Then, restart your FastAPI server:
+```bash
+uvicorn main:app --reload
+```
+It will automatically recreate the table with the new `user_id` column in the cloud!
+
+---
+
+## Part C: Frontend Login & UI
+
+Right now, your frontend just has a dashboard. We need a Login screen. We also need to install the Supabase library.
+
+### Step 8: Install Supabase Client
+Open a **new terminal** for your frontend (make sure you are in the `frontend` folder) and run:
+```bash
+npm install @supabase/supabase-js
+```
+
+### Step 9: Set up Supabase in Next.js
+1. In your `frontend` folder, create a new file called `.env.local`.
+2. Go to Supabase -> **Project Settings** -> **API**.
+3. Copy the **Project URL** and **anon public key**. Paste them into `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+### Step 10: Create the Login Page
+Let's replace the dashboard temporarily to test login.
+
+1. Open `frontend/app/page.tsx`.
+2. **Delete everything** and paste this Login UI:
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Logged in successfully! (Token: " + data.session.access_token + ")");
+      // We will redirect to the dashboard tomorrow!
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-900 flex items-center justify-center p-8">
+      <form onSubmit={handleLogin} className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-3xl font-bold text-blue-400 mb-6 text-center">Login to Idea Vault</h1>
+        
+        <div className="mb-4">
+          <label className="block text-gray-400 mb-2">Email</label>
+          <input
+            type="email"
+            className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-gray-400 mb-2">Password</label>
+          <input
+            type="password"
+            className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded">
+          Login
+        </button>
+      </form>
+    </main>
+  );
+}
+```
+
+### Step 11: Test the Login
+1. Refresh `localhost:3000`.
+2. You should see the Login screen.
+3. Enter `saima@test.com` and `password123`.
+4. Click Login. 
+5. **Success!** You will get an alert showing your Supabase session token.
+
+*(You have just built a real authentication system! Tomorrow, we will save this token and redirect the user to their dashboard).*
+
+---
+
+### Step 12: Commit to GitHub
+```bash
+git add .
+git commit -m "Day 7: Supabase Setup, Backend User IDs, and Login UI"
+git push
+```
+
+---
 
 
 
