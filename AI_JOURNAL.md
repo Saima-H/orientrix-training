@@ -159,7 +159,7 @@ Here is the complete, continuous block. **Just copy everything below and paste i
 
 It includes Day 1 through Day 7, formatted exactly for GitHub.
 
-```markdown
+markdown
 # Daily Architecture Progress
 
 ## Day 1: Foundations & Git
