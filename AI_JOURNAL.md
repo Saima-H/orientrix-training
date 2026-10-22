@@ -286,7 +286,7 @@ flowchart LR
     classDef past fill:#616161,color:#fff;
     classDef day7 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
 ```
-```
+
 # IDEA VAULT:
 
 ## The Correct Model: Build-First, Learn-When-Stuck
