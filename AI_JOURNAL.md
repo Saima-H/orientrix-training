@@ -161,7 +161,7 @@ Here is the **corrected, accurate** version of the timeline, including TypeScrip
 Copy and paste this entire block. It tells the true story of exactly what you built, day by day, and where you were in the architecture.
 
 
-# Daily Architecture Progress
+# Daily Architecture Progress(GREEN COLOR SHOWS CURRENT STAGE)
 
 ## Day 1: Foundations & Git
 **What we did:** Set up the repository, `.gitignore`, and planned the project. No actual app code existed yet.
