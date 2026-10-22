@@ -1782,7 +1782,7 @@ export default function Home() {
 4. Save the file (Uvicorn will auto-restart).
 5. Go back to `http://localhost:3000` and click **Save Idea** again. **It works!**
 
-   ![Uploading image.png…]()
+   <img width="637" height="316" alt="image" src="https://github.com/user-attachments/assets/c4026d95-b6cc-4b19-bd62-46f77b5ede4d" />
 
 
 ---
@@ -2006,6 +2006,198 @@ Scroll down to the `ideas.map` section in `page.tsx`. Add this block right under
 4. Type: *"Build an AI habit tracker app"* and click save.
 
 **Boom!** You will see the idea appear with `#side-project`, `#business`, and `#health` tags automatically generated and displayed below it!
+
+<img width="1279" height="675" alt="image" src="https://github.com/user-attachments/assets/8db0ab5d-e2e4-4682-a833-44a2085c9fab" />
+
+This is a **hybrid of Day 5 and Day 4**. 
+
+Here is exactly what happened:
+*   **Day 4** was building the Smart Tag Generator. We built the logic, but it was a standalone endpoint (`/generate-tags`) that didn't actually save to the database.
+*   **Day 5** is building the Frontend UI. 
+
+By connecting them just now, we finished the **Day 4 deliverable** (the smart tag feature) and fully integrated it into your **Day 5 Frontend**. 
+
+**Day 7** is a completely different beast. On Day 7, we will throw away SQLite and replace it with **Supabase** (a cloud PostgreSQL database), add **User Authentication (Login/Signup)**, and write **Row Level Security (RLS)** so User A cannot see User B's ideas. 
+
+Right now, your app is a single-user local app. That is exactly what Days 4-6 are supposed to be. 
+
+---
+
+### Did the tags show up on your screen?
+If you typed *"Build an AI habit tracker app"* and you see `#side-project`, `#business`, and `#health` pop up under the idea... **You have successfully built the entire Day 4 & Day 5 stack!**
+
+### Let's do a quick Day 5 wrap-up:
+1. Stop both servers.
+2. Open your `AI_JOURNAL.md` and add a note about how you integrated the tags into the `POST /ideas` endpoint.
+3. In your terminal (inside `idea-vault`), run:
+   ```bash
+   git add .
+   git commit -m "Day 5: Integrated Smart Tags into Frontend UI"
+   git push
+   ```
+
+**Once you've pushed, let me know!** 
+
+
+
+**YES! You did it!** 🎉
+
+You now have a fully functional **Full-Stack Application**:
+1. **Frontend (Next.js)** displaying a beautiful UI.
+2. **Backend (FastAPI)** processing requests.
+3. **Database (SQLite)** storing the data.
+4. **AI Logic (Mock NLP)** automatically generating tags!
+
+This is a massive achievement. Most people take weeks to get to this point.
+
+---
+
+### Final Step for Day 5: Commit to GitHub
+
+---
+
+# 🚀 Day 6: Quality Assurance (QA) & Testing
+
+Today, you switch hats. You are no longer the Developer; you are the **QA Engineer**. Your goal is to prove that your app works and find ways to break it.
+
+The assignment document asks for **three specific deliverables** today:
+1. `test-cases.md` (30 test cases)
+2. `bug-reports.md` (5 real bug reports)
+3. A Postman collection (10+ requests)
+
+---
+
+### Step 1: The Postman Collection
+We need to test your API using Postman.
+
+1. Download and install **Postman** from [postman.com/downloads](https://www.postman.com/downloads/).
+2. Open Postman. Click the **Collections** tab on the left, then click the **+** icon to create a new collection. Name it **"Idea Vault API"**.
+3. Click the three dots (`...`) next to the collection name, and click **Add request**.
+4. Name the request **"GET All Ideas"**.
+5. Change the method from `GET` to `GET`, and in the URL bar, paste: `http://127.0.0.1:8000/ideas`. Click **Send**. You should see your JSON data below.
+6. Create another request. Name it **"POST New Idea"**.
+7. Change the method to `POST`, URL: `http://127.0.0.1:8000/ideas`.
+8. Go to the **Body** tab below the URL, select **raw**, and select **JSON** from the dropdown.
+9. Paste this inside the body:
+   ```json
+   {
+     "content": "Testing my API with Postman",
+     "url": "https://postman.com"
+   }
+   ```
+10. Click **Send**. You should get a `200 OK` response.
+
+**Deliverable:** To get your 10 requests (you can just duplicate the POST request 8 times and change the text), click the three dots (`...`) on the collection, click **Export**, and save the JSON file into your `idea-vault` folder as `postman_collection.json`.
+
+# wht happens when we send different data 
+I see exactly what went wrong! Look at the middle of your Postman screen. 
+
+Right under the URL bar, it says **`form-data`**. 
+But our backend expects **JSON**. Because it's set to `form-data`, Postman is sending an empty form, which is why your API is yelling `422 Unprocessable Entity` (Missing field).
+
+Here is how to fix it, step-by-step:
+
+### Step 1: Change `form-data` to `raw`
+1. In the row that has `form-data`, `Params`, `Authorization`, etc., click on **Body**.
+2. Look at the options that appear just below it: `none`, `form-data`, `x-www-form-urlencoded`, `raw`, `binary`, `GraphQL`.
+3. **Click on `raw`.**
+4. A new dropdown will appear on the far right of that row (it currently probably says `Text`). Click it and select **`JSON`**.
+
+### Step 2: Paste the JSON body
+Once you've selected `raw` and `JSON`, a big text box will appear below. Paste this exactly:
+
+```json
+{
+  "content": "Testing my API with Postman",
+  "url": "https://postman.com"
+}
+```
+
+*(Notice I removed the `"tags"` field from your screenshot. The backend generates the tags automatically now, so you don't need to send them!)*
+
+### Step 3: Send
+Click the blue **Send** button.
+
+It should now return a `200 OK` and show you the idea with the generated tags (e.g., `"side-project, coding"`).
+
+---
+
+### Why did this happen? (The Learning Moment)
+This is a **classic API test**. When writing your `bug-reports.md`, this is a great bug to write down: *"API returns 422 error if the client sends form-data instead of JSON."*
+
+**Let me know when it turns green (200 OK)!** Once it works, you just need to duplicate this request 8 more times (to get your 10 requests) and export the collection.
+# continue now with the postman thingy
+
+
+
+<img width="638" height="334" alt="image" src="https://github.com/user-attachments/assets/c126505e-b058-4383-a4ef-a0b0c9258287" />
+
+<img width="1273" height="673" alt="image" src="https://github.com/user-attachments/assets/45c95117-81c3-4146-b716-8742317260be" />
+
+
+
+---
+
+### Step 2: Write `test-cases.md`
+Create a file in your root `idea-vault` folder called `test-cases.md`. 
+Write **30 test cases** for your app. Use this format:
+
+```markdown
+# Test Cases for Idea Vault
+
+| ID | Test Scenario | Steps | Expected Result | Priority |
+|---|---|---|---|---|
+| TC-01 | Submit a valid idea | 1. Go to UI<br>2. Enter "Build an app"<br>3. Click Save | Idea appears in list with tags | High |
+| TC-02 | Submit empty idea | 1. Go to UI<br>2. Leave textbox blank<br>3. Click Save | Button is disabled or error shown | High |
+| TC-03 | Delete an idea (if implemented) | ... | ... | Medium |
+| TC-04 | Filter by tag (if implemented) | ... | ... | Medium |
+```
+*(You need to write 30 of these. Think about edge cases: very long text, invalid URLs, XSS attacks like `<script>alert(1)</script>`, etc.)*
+
+---
+
+### Step 3: Write `bug-reports.md`
+Create `bug-reports.md`. You need to find **5 real bugs** in your app (or in Postman/Next.js). 
+Don't worry if you don't have 5 bugs right now—you can intentionally break things to see how the app reacts. 
+
+Use this format:
+```markdown
+# Bug Reports
+
+## Bug 1: App crashes when URL is invalid
+**Severity:** High
+**Priority:** P1
+**Steps to Reproduce:**
+1. Go to UI.
+2. Enter content.
+3. Enter URL as "hello" instead of "https://hello.com".
+4. Click Save.
+**Expected Result:** App should show an error message or save without URL.
+**Actual Result:** App crashes or shows a CORS error.
+```
+*(Find 4 more! For example: What happens if you submit a 10,000-word idea? What happens if you try to send a POST request with Postman with no content?)*
+
+---
+
+### Step 4: Update `AI_JOURNAL.md`
+Add a section for Day 6:
+```markdown
+### Day 6: QA Testing
+- **Postman:** Exported 10 API requests.
+- **Test Cases:** Wrote 30 test cases.
+- **Bugs Found:** Found 5 bugs. The most critical was when submitting an invalid URL, FastAPI threw a 422 Validation Error. I need to handle this gracefully on the frontend.
+```
+
+---
+
+### Step 5: Commit to GitHub
+```bash
+git add .
+git commit -m "Day 6: QA Testing, Postman collection, test cases, and bug reports"
+git push
+```
+
+**Let me know when you've pushed Day 5 and 6!** 
 
 
 
