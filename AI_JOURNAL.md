@@ -152,52 +152,58 @@ Therefore, your current architecture (**Next.js + FastAPI + Supabase**) is the *
 
 
 # day wise 
+You are **100% right**, and this is a brilliant catch. I made a mistake in the storyline of the diagrams.
+
+I drew Next.js and FastAPI as if they existed from Day 1, but we didn't even install them until Day 3 and Day 5. I also completely left out **TypeScript**, which is what you used to write the frontend.
+
+Here is the **corrected, accurate** version of the timeline, including TypeScript. 
+
+Copy and paste this entire block. It tells the true story of exactly what you built, day by day, and where you were in the architecture.
+
+```markdown
 # Daily Architecture Progress
 
 ## Day 1: Foundations & Git
-Here is the complete, continuous block. **Just copy everything below and paste it directly into your `.md` file.** 
-
-It includes Day 1 through Day 7, formatted exactly for GitHub.
-
-markdown
-# Daily Architecture Progress
-
-## Day 1: Foundations & Git
+**What we did:** Set up the repository, `.gitignore`, and planned the project. No actual app code existed yet.
 ```mermaid
 flowchart LR
     Git["Git & GitHub Repo<br/>(README, .gitignore)"]:::day1
-    FE["Next.js Frontend"]:::future
+    FE["Next.js (TypeScript)"]:::future
     BE["FastAPI Backend"]:::future
     DB[("Database")]:::future
 
-    Git -. "Tracks the code for" .-> FE
+    Git -. "Tracks the project" .-> FE
     FE --> BE --> DB
 
+    classDef day1 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+    classDef future fill:#424242,color:#fff,stroke:#fff,stroke-width:1px;
 ```
 
-## Day 2: Database & SQL
+## Day 2: Database Design & SQL
+**What we did:** Designed the schema (`users`, `ideas`, `tags`) and wrote 20 SQL queries in a sandbox.
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
-    FE["Next.js Frontend"]:::future
+    FE["Next.js (TypeScript)"]:::future
     BE["FastAPI Backend"]:::future
-    DB[("Database Schema<br/>ideas - tags - idea_tags")]:::day2
+    DB[("SQL Schema Designed<br/>ideas · tags · idea_tags")]:::day2
 
     Git -. "Tracks" .-> FE
     FE --> BE
-    BE -. "Will talk to" .-> DB
+    BE -. "Will connect to" .-> DB
 
     classDef past fill:#616161,color:#fff;
     classDef day2 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
     classDef future fill:#424242,color:#fff;
 ```
 
-## Day 3: FastAPI Backend
+## Day 3: FastAPI Backend & SQLite
+**What we did:** Wrote Python code. FastAPI was born, and SQLAlchemy created a local SQLite database (`vault.db`).
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
-    FE["Next.js Frontend"]:::future
-    BE["FastAPI Backend<br/>GET / POST /ideas"]:::day3
+    FE["Next.js (TypeScript)"]:::future
+    BE["FastAPI Backend<br/>(Python GET/POST)"]:::day3
     DB[("SQLite Database<br/>(vault.db)")]:::day3
 
     Git -. "Tracks" .-> FE
@@ -210,12 +216,13 @@ flowchart LR
 ```
 
 ## Day 4: Smart Tags (Mock NLP)
+**What we did:** Added Python logic to automatically read text and generate tags without needing an external AI API.
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
-    FE["Next.js Frontend"]:::future
+    FE["Next.js (TypeScript)"]:::future
     BE["FastAPI Backend"]:::past
-    AI["Mock NLP<br/>(Tag Generator)"]:::day4
+    AI["Mock NLP<br/>(Python Logic)"]:::day4
     DB[("SQLite Database")]:::past
 
     Git -. "Tracks" .-> FE
@@ -229,11 +236,12 @@ flowchart LR
     classDef future fill:#424242,color:#fff;
 ```
 
-## Day 5: Next.js Frontend
+## Day 5: Next.js Frontend (TypeScript)
+**What we did:** Built the UI in React/TypeScript. We also added CORS middleware to allow the Frontend to finally talk to the Backend.
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
-    FE["Next.js Frontend<br/>(Dashboard & Form)"]:::day5
+    FE["Next.js Frontend<br/>(TypeScript & Tailwind)"]:::day5
     CORS{{"CORS<br/>Middleware"}}:::day5
     BE["FastAPI Backend"]:::past
     AI["Mock NLP"]:::past
@@ -250,11 +258,12 @@ flowchart LR
 ```
 
 ## Day 6: QA & Testing
+**What we did:** Switched hats to QA. Tested the API with Postman and wrote Test Cases and Bug Reports.
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
-    QA["QA Testing<br/>(Test Cases, Bug Reports, Postman)"]:::day6
-    FE["Next.js Frontend"]:::past
+    QA["QA Testing<br/>(Postman, Bugs, Test Cases)"]:::day6
+    FE["Next.js (TypeScript)"]:::past
     BE["FastAPI Backend"]:::past
     DB[("SQLite Database")]:::past
 
@@ -267,7 +276,8 @@ flowchart LR
     classDef day6 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
 ```
 
-## Day 7: Supabase & Auth
+## Day 7: Supabase Migration & Auth
+**What we did:** Ditched SQLite for Supabase (Cloud PostgreSQL). Added User IDs to the database, built the Login UI, and connected Supabase Auth.
 ```mermaid
 flowchart LR
     Git["Git & GitHub"]:::past
@@ -283,6 +293,7 @@ flowchart LR
 
     classDef past fill:#616161,color:#fff;
     classDef day7 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+```
 ```
 
 # IDEA VAULT:
