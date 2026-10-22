@@ -2201,6 +2201,46 @@ git push
 
 Welcome to Week 2! This is where you level up from a "local app" to a **production-grade cloud app**.
 
+Here is the **no-nonsense, short cheat sheet** for Day 7. Read this, and you'll understand exactly what we are doing and why.
+
+### 1. What is Supabase?
+It’s a "Backend as a Service." Instead of running a database on your computer (`vault.db`), Supabase gives you a **cloud PostgreSQL database** and a **built-in Authentication system**. 
+*   *Why we need it:* So users can log in, and so your data is stored online (production-ready), not just on your laptop.
+
+### 2. Authentication (Auth)
+Auth is how you prove *who* a user is.
+*   Supabase handles the passwords and security. You don't write the login logic.
+*   When a user logs in, Supabase gives them a **JWT (JSON Web Token)**. It’s a long string that acts like a VIP pass. Every time the user asks for data, they show this pass to your FastAPI backend.
+
+### 3. Row Level Security (RLS)
+This is the most important concept of the week. 
+*   Right now, anyone can see all ideas. 
+*   **RLS** is a rule written *inside the Supabase database*. 
+*   You write a rule: *"Only return this row if the `user_id` matches the person asking."* 
+*   *Why it matters:* Even if a hacker tricks your frontend and asks for User B's data, Supabase (the database) will block it. It’s the ultimate security lock.
+
+### 4. The `user_id` Column
+To make RLS work, every idea in the database **must** have a `user_id` column. 
+*   When Saima adds an idea, it gets tagged with her ID.
+*   When Alex adds an idea, it gets tagged with his ID.
+*   When Alex asks for his dashboard, FastAPI says: *"Give me all ideas where `user_id` = Alex."*
+
+---
+
+### The Architecture Flow (How it connects)
+1.  **Frontend (Next.js):** User types email/password -> sends to Supabase.
+2.  **Supabase Auth:** Verifies password -> sends a VIP pass (JWT) back to Next.js.
+3.  **Frontend:** Sends the VIP pass to FastAPI when asking for ideas.
+4.  **Backend (FastAPI):** Receives the pass, checks the database, returns only that user's ideas.
+
+---
+
+### 3 Key Terms to Know:
+*   **PostgreSQL:** The type of cloud database Supabase uses (instead of SQLite).
+*   **psycopg2:** The Python driver you installed so FastAPI can talk to Postgres.
+*   **@supabase/supabase-js:** The Next.js library you installed to handle login.
+
+That is literally all you need to know to finish Day 7. Are you ready to run the step-by-step code and set up your Supabase project?
 Today's goals from the assignment:
 1. **Database Integration:** Move from local SQLite to Supabase (Cloud PostgreSQL).
 2. **Authentication:** Add Sign-up and Login using Supabase Auth.
