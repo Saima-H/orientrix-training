@@ -151,7 +151,142 @@ Even though Serverless (#1) is the "smartest" architecture, **you cannot use it 
 Therefore, your current architecture (**Next.js + FastAPI + Supabase**) is the **perfect** architecture for this specific assignment. 
 
 
+# day wise 
+# Daily Architecture Progress
 
+## Day 1: Foundations & Git
+Here is the complete, continuous block. **Just copy everything below and paste it directly into your `.md` file.** 
+
+It includes Day 1 through Day 7, formatted exactly for GitHub.
+
+```markdown
+# Daily Architecture Progress
+
+## Day 1: Foundations & Git
+```mermaid
+flowchart LR
+    Git["Git & GitHub Repo<br/>(README, .gitignore)"]:::day1
+    FE["Next.js Frontend"]:::future
+    BE["FastAPI Backend"]:::future
+    DB[("Database")]:::future
+
+    Git -. "Tracks the code for" .-> FE
+    FE --> BE --> DB
+
+    classDef day1 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+    classDef future fill:#424242,color:#fff,stroke:#fff,stroke-width:1px;
+```
+
+## Day 2: Database & SQL
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    FE["Next.js Frontend"]:::future
+    BE["FastAPI Backend"]:::future
+    DB[("Database Schema<br/>ideas - tags - idea_tags")]:::day2
+
+    Git -. "Tracks" .-> FE
+    FE --> BE
+    BE -. "Will talk to" .-> DB
+
+    classDef past fill:#616161,color:#fff;
+    classDef day2 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+    classDef future fill:#424242,color:#fff;
+```
+
+## Day 3: FastAPI Backend
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    FE["Next.js Frontend"]:::future
+    BE["FastAPI Backend<br/>GET / POST /ideas"]:::day3
+    DB[("SQLite Database<br/>(vault.db)")]:::day3
+
+    Git -. "Tracks" .-> FE
+    FE -. "Will talk to" .-> BE
+    BE <-->|SQLAlchemy| DB
+
+    classDef past fill:#616161,color:#fff;
+    classDef day3 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+    classDef future fill:#424242,color:#fff;
+```
+
+## Day 4: Smart Tags (Mock NLP)
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    FE["Next.js Frontend"]:::future
+    BE["FastAPI Backend"]:::past
+    AI["Mock NLP<br/>(Tag Generator)"]:::day4
+    DB[("SQLite Database")]:::past
+
+    Git -. "Tracks" .-> FE
+    FE -. "Will talk to" .-> BE
+    BE <--> DB
+    BE -->|Analyzes Text| AI
+    AI -->|Returns Tags| BE
+
+    classDef past fill:#616161,color:#fff;
+    classDef day4 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+    classDef future fill:#424242,color:#fff;
+```
+
+## Day 5: Next.js Frontend
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    FE["Next.js Frontend<br/>(Dashboard & Form)"]:::day5
+    CORS{{"CORS<br/>Middleware"}}:::day5
+    BE["FastAPI Backend"]:::past
+    AI["Mock NLP"]:::past
+    DB[("SQLite Database")]:::past
+
+    Git -. "Tracks" .-> FE
+    FE <-->|HTTP Request| CORS
+    CORS <-->|JSON| BE
+    BE <--> DB
+    BE <--> AI
+
+    classDef past fill:#616161,color:#fff;
+    classDef day5 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+```
+
+## Day 6: QA & Testing
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    QA["QA Testing<br/>(Test Cases, Bug Reports, Postman)"]:::day6
+    FE["Next.js Frontend"]:::past
+    BE["FastAPI Backend"]:::past
+    DB[("SQLite Database")]:::past
+
+    Git -. "Tracks" .-> QA
+    QA -. "Tests UI" .-> FE
+    QA -. "Tests API" .-> BE
+    BE <--> DB
+
+    classDef past fill:#616161,color:#fff;
+    classDef day6 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+```
+
+## Day 7: Supabase & Auth
+```mermaid
+flowchart LR
+    Git["Git & GitHub"]:::past
+    FE["Next.js Frontend<br/>(+ Login UI)"]:::day7
+    BE["FastAPI Backend<br/>(+ user_id routing)"]:::day7
+    SupaAuth["Supabase Auth<br/>(Login System)"]:::day7
+    DB[("Supabase Cloud<br/>PostgreSQL")]:::day7
+
+    Git -. "Tracks" .-> FE
+    FE -->|1. Authenticates via| SupaAuth
+    FE -->|2. Sends user_id| BE
+    BE -->|3. Queries| DB
+
+    classDef past fill:#616161,color:#fff;
+    classDef day7 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
+```
+```
 # IDEA VAULT:
 
 ## The Correct Model: Build-First, Learn-When-Stuck
