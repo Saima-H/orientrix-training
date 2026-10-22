@@ -173,8 +173,6 @@ flowchart LR
     Git -. "Tracks the code for" .-> FE
     FE --> BE --> DB
 
-    classDef day1 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
-    classDef future fill:#424242,color:#fff,stroke:#fff,stroke-width:1px;
 ```
 
 ## Day 2: Database & SQL
