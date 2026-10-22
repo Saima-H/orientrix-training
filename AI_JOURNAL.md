@@ -160,7 +160,7 @@ Here is the **corrected, accurate** version of the timeline, including TypeScrip
 
 Copy and paste this entire block. It tells the true story of exactly what you built, day by day, and where you were in the architecture.
 
-```markdown
+
 # Daily Architecture Progress
 
 ## Day 1: Foundations & Git
@@ -294,7 +294,7 @@ flowchart LR
     classDef past fill:#616161,color:#fff;
     classDef day7 fill:#2e7d32,color:#fff,stroke:#fff,stroke-width:2px;
 ```
-```
+
 
 # IDEA VAULT:
 
