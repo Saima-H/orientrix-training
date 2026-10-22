@@ -14,7 +14,36 @@ flowchart LR
     CORS --> FE
     FE -->|Rendered UI| User
 ```
+## 🎬 The Movie: Idea Vault Architecture
 
+```mermaid
+flowchart TD
+    subgraph Heroes ["Heroes"]
+        Next["Next.js - The Visionary"]
+        Fast["FastAPI - The Brains"]
+        Supa["Supabase - The Fortress"]
+    end
+
+    subgraph Villains ["Villains"]
+        CORS["The Phantom CORS - Gatekeeper"]
+        Hack["The Hacker - SQL Injector"]
+        AI["The Hallucination - AI Troll"]
+    end
+
+    subgraph Side ["Side Characters"]
+        Py["Pytest - Security Guard"]
+        Post["Postman - Detective"]
+    end
+
+    Next -->|HTTP Request| CORS
+    CORS -->|Blocked by Ports!| Fast
+    Hack -.->|Tries to steal data| Supa
+    Supa -.->|RLS Blocks Attack!| Hack
+    Fast --> AI
+    AI -.->|Generates bad tags| Fast
+    Py -->|Tests Security| Fast
+    Post -->|Finds Bugs| Next
+    Fast -->|Saves Data| Supa
 
 
 
