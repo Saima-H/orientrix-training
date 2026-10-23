@@ -3187,6 +3187,14 @@ git commit -m "Day 7: Supabase Auth, Login UI, and Dashboard redirect"
 git push
 
 
+<img width="1271" height="629" alt="image" src="https://github.com/user-attachments/assets/6fb5b39b-df16-4cd3-9b32-ca920dbfdb81" />
+
+<img width="1273" height="637" alt="image" src="https://github.com/user-attachments/assets/0203ff78-3ce3-4ce7-a511-394712ee712a" />
+<img width="1269" height="643" alt="image" src="https://github.com/user-attachments/assets/c9da7b6a-fffe-4880-9124-a18a5405b184" />
+
+
+
+
 # 🛡️ Day 8 Basics: Authentication & Row Level Security (RLS)
 
 Before we write any code today, here are the 3 key concepts you need to understand. If you understand these, the code will make perfect sense.
@@ -3274,6 +3282,8 @@ Let's implement it step-by-step.
     auth.jwt() ->> 'email' = user_id
     ```
 11. Click **Save Policy**.
+    <img width="1279" height="627" alt="image" src="https://github.com/user-attachments/assets/857fc0a0-7b2e-41b8-8e5d-b09b0351b9d9" />
+
 
 ---
 
@@ -3401,14 +3411,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 **Let me know when you get the `401 Unauthorized` error in Postman!** That proves your API is now locked down. Then we will write the Pytest script (the final deliverable for Day 8).
 
-
-
-
-
-<img width="1271" height="629" alt="image" src="https://github.com/user-attachments/assets/6fb5b39b-df16-4cd3-9b32-ca920dbfdb81" />
-
-<img width="1273" height="637" alt="image" src="https://github.com/user-attachments/assets/0203ff78-3ce3-4ce7-a511-394712ee712a" />
-<img width="1269" height="643" alt="image" src="https://github.com/user-attachments/assets/c9da7b6a-fffe-4880-9124-a18a5405b184" />
 
 
 
