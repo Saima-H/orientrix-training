@@ -3410,6 +3410,17 @@ const handleSubmit = async (e: React.FormEvent) => {
 6. Now log in as `alex@test.com` on the frontend. Alex should see 0 ideas.
 
 **Let me know when you get the `401 Unauthorized` error in Postman!** That proves your API is now locked down. Then we will write the Pytest script (the final deliverable for Day 8).
+# now if i try to access just thru postman im getting error
+
+<img width="1279" height="671" alt="image" src="https://github.com/user-attachments/assets/4999c675-08b7-4abf-952f-3a43038fee79" />
+
+# we have two users saima and spiderman , they both cant access each others ideas
+<img width="635" height="313" alt="image" src="https://github.com/user-attachments/assets/2ffca9a6-e56e-4c71-9e34-2383dc536f08" />
+saim's dashboard
+
+<img width="1275" height="633" alt="image" src="https://github.com/user-attachments/assets/a6f956dd-25cb-4f97-843f-7c40e843799b" />
+spiderman's dashboard
+
 
 
 
