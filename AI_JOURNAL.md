@@ -3819,6 +3819,16 @@ If you get 5 PASSED, you are officially done with the Developer track!
 
 *(If you still get failures on `test_invalid_token` or `test_create_idea_for_other_user_fails`, check your `main.py` to ensure you added the `if idea.user_id != user_email:` check).*
 
+<img width="1279" height="662" alt="image" src="https://github.com/user-attachments/assets/a767b6ca-d73d-4bf3-8e05-593643a25772" />
+so basically the testcase which didnt pass was coz of this line --->>>assert response.json()["detail"] == "Missing Authorization Header"
+
+# all test cases passed
+<img width="1267" height="646" alt="image" src="https://github.com/user-attachments/assets/88f75219-4ae1-4c15-8e86-46c2f998762b" />
+
+
+
+
+
 
 
 
