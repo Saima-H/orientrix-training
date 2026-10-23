@@ -2807,6 +2807,10 @@ export default function Login() {
 
 ---
 
+<img width="1271" height="624" alt="image" src="https://github.com/user-attachments/assets/1533ffb2-464b-471c-ba57-e264dc736d3e" />
+
+
+
 ### Step 12: Commit to GitHub
 ```bash
 git add .
