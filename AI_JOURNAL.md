@@ -2819,6 +2819,68 @@ git push
 ```
 
 ---
+Here is a complete breakdown of everything we faced on Day 7, how we fixed it, and how to handle the Vim editor if it ever pops up again.
 
+You can copy this directly into your `AI_JOURNAL.md` or notebook.
+
+---
+
+### 🛠️ Day 7 Problems & Resolutions
+
+**1. The `ModuleNotFoundError: No module named 'psycopg'`**
+*   **The Problem:** We installed `psycopg2-binary`, but SQLAlchemy and Python 3.13 were looking for the newer `psycopg` (version 3) driver to connect to PostgreSQL.
+*   **The Fix:** We ran `pip install psycopg[binary]` and changed the start of our database URL in `database.py` from `postgresql://` to `postgresql+psycopg://` to explicitly tell SQLAlchemy which driver to use.
+
+**2. The `failed to resolve host '@db.xxx.supabase.co'` Error**
+*   **The Problem:** Your database password contained an `@` symbol (e.g., `Khanandkhan767@`). SQLAlchemy read that `@` and thought the hostname started after it, causing a DNS error.
+*   **The Fix:** We URL-encoded the password by replacing `@` with `%40`. So the password became `Khanandkhan767%40`.
+
+**3. The IPv4 Network Timeout**
+*   **The Problem:** Supabase's "Direct Connection" string only works on IPv6 networks. If your Wi-Fi is IPv4 (like most homes), it fails.
+*   **The Fix:** We went into Supabase settings, changed the connection string from "Direct connection" to **"Transaction pooler"**, and used that new host address (which works on all networks).
+
+**4. Supabase API Keys Changed Names**
+*   **The Problem:** Supabase recently renamed the `anon` key to `Publishable Key`. 
+*   **The Fix:** We realized they are the exact same thing. We used the Publishable Key in the `.env.local` file for the frontend.
+
+**5. Git Merge / Vim Editor**
+*   **The Problem:** Running `git pull` opened a black screen (Vim). This happens when Git needs to merge remote and local changes and asks you to write a commit message.
+*   **The Fix:** We pressed `Esc`, typed `:wq` (write and quit), and hit `Enter` to accept the default merge message. Then we ran `git push`.
+
+---
+
+### 📝 How to handle the Vim Editor (Git Merge)
+If you ever see that black screen again, here is what it means and what to do.
+
+**Scenario A: You just want to accept the default message (What you did)**
+1. Press `Esc` (to ensure you aren't in typing mode).
+2. Type `:wq` (stands for Write & Quit).
+3. Press `Enter`. 
+
+**Scenario B: You actually want to write a custom merge message**
+If you want to explain *why* you are merging (e.g., "Merging my frontend login updates"):
+1. Press `Esc` to make sure you are in "Normal mode".
+2. Press the **`i`** key on your keyboard. This puts you in "Insert mode" (you will see `-- INSERT --` at the bottom).
+3. Use your arrow keys to move to the top of the file and type your custom message.
+4. Press `Esc` (to exit Insert mode).
+5. Type `:wq` (to save and quit).
+6. Press `Enter`.
+
+**Scenario C: You want to cancel the merge entirely**
+If you opened Vim by accident and don't want to merge:
+1. Press `Esc`.
+2. Type `:q!` (stands for Quit without saving).
+3. Press `Enter`.
+
+---
+
+### What's next?
+Now that your code is fully pushed and synced to GitHub, you can continue testing the Day 7 login. 
+
+1. Go to `http://localhost:3000` (make sure both servers are running).
+2. Log in with `saima@test.com` and `password123`.
+3. Did it redirect you to `/dashboard` and let you save an idea?
+
+Let me know if the login works!
 
 
