@@ -3523,6 +3523,197 @@ git push
 ```
 
 Let me know when you see the Log Out button and it works! Then we write the **Pytest** script (the final requirement for Day 8).
+<img width="1275" height="638" alt="image" src="https://github.com/user-attachments/assets/029274e4-52f4-416a-a05e-c343d727d89f" />
+Yes, actually. There is one **massive confusing thing** in the way we just built this, and it's a very common trap for developers. 
+
+You might be wondering: *"Wait, we set up **Row Level Security (RLS)** in Supabase, but in FastAPI, we are using `db.query(Idea).filter(Idea.user_id == user_email)`. Are we using RLS or not?"*
+
+### The Confusing Part: Who is actually doing the security?
+
+Right now, you have **two security guards** doing the same job:
+
+1. **FastAPI (The Python Guard):** Reads the JWT token, finds the email, and adds `WHERE user_id = 'saima@test.com'` to the SQL query.
+2. **Supabase (The Database Guard):** Has an RLS rule that says `auth.jwt() ->> 'email' = user_id`.
+
+**Why is this confusing?** Because if FastAPI is already filtering the data, does the RLS rule even do anything?
+
+### The Answer: The "Master Key" Problem
+Here is the secret: **Your FastAPI is connecting to Supabase using your "Master Password" (the `postgresql://...` connection string in `database.py`).**
+
+In Postgres, the "Master Password" (the `postgres` user) **bypasses Row Level Security entirely.** 
+
+Because FastAPI is using the Master Password, the Supabase RLS rule is being ignored by FastAPI. FastAPI is the one actually filtering the data by adding `WHERE user_id = ...`.
+
+### So why did we set up RLS?
+If FastAPI is doing the filtering, why bother with RLS? Because of the **Frontend**.
+
+If you ever decide to make your Next.js frontend talk *directly* to Supabase (bypassing FastAPI to make the app faster), the frontend will use the `anon` public key + the user's JWT. At that exact moment, the Master Password is gone, and **Supabase RLS will step in and block any bad requests.**
+
+For this assignment, you proved you know how to write both:
+1. The API-level filtering (FastAPI).
+2. The Database-level filtering (Supabase RLS).
+
+**This is exactly how enterprise apps are built:** Layer 1 (API) and Layer 2 (Database) are both secured, just in case one fails.
+
+---
+
+# 🧪 The Basics of Pytest (For a Beginner)
+
+Before we write the code, here is everything you need to know about Pytest in plain English. 
+
+### 1. What is Pytest?
+Pytest is a tool for Python that lets you write **automated tests**. 
+Instead of manually clicking buttons in your app to see if it breaks, you write a Python script that clicks the buttons for you. If the script passes, you know your app is safe. If it fails, it tells you exactly what broke.
+
+### 2. How does Pytest work?
+Pytest looks for any file that starts with `test_` (like `test_main.py`). Inside that file, it looks for any function that starts with `test_`. It runs those functions one by one.
+
+### 3. The `assert` keyword
+This is the most important word in testing. `assert` means **"I expect this to be true. If it's not, crash the test and tell me."**
+```python
+assert 2 + 2 == 4 # Passes
+assert 2 + 2 == 5 # Fails (Pytest will show a big red error)
+```
+
+### 4. What is `TestClient`?
+You don't want to actually open a browser to test your API. `TestClient` is a magic tool from FastAPI that pretends to be a browser. It sends fake HTTP requests directly to your FastAPI code without needing the server to be running on port 8000.
+```python
+from fastapi.testclient import TestClient
+client = TestClient(app)
+response = client.get("/ideas") # Pretends to be a browser!
+```
+
+### 5. What is "Mocking"?
+In our test file, we have this:
+```python
+SAIMA_TOKEN = "Bearer fake-token-for-saima"
+```
+Normally, FastAPI would try to read this token, send it to Supabase, and verify the signature. But in a test, we don't have a real Supabase connection.
+**Mocking** means we trick Python into saying: *"If you see 'fake-token-for-saima', just pretend it's a valid token for Saima."* This lets us test the logic without needing the internet.
+
+### 6. What are we testing in these 5 tests?
+1. **Auth required:** If someone hits the API without a token, they get a `401 Unauthorized` error.
+2. **Create Idea:** If Saima sends a valid token and an idea, it saves successfully (`200 OK`).
+3. **Isolation (The Important One):** If Saima creates a secret idea, and Alex asks for ideas, Alex should **not** see Saima's secret.
+4. **Spoofing:** If Saima tries to create an idea and puts `"user_id": "alex@test.com"` in the body, the server should block it (`403 Forbidden`). You can't create ideas for other people.
+5. **Invalid Token:** If a hacker sends a garbage token, they get a `401 Unauthorized` error.
+
+---
+
+### Are you ready to run them?
+1. Install pytest: `pip install pytest httpx`
+2. Create the `test_main.py` file.
+3. Run `pytest test_main.py -v` in your terminal.
+
+**Let me know if you see 5 green PASSED lines!** Then we will wrap up Day 9 with the QA track (Playwright).
+### Let's finish Day 8 with Pytest!
+
+The final requirement for the Developer track is:
+> *"Write at least 5 pytest tests for your FastAPI backend. At least one must verify that User A cannot read User B's ideas."*
+
+Let's write those tests.
+
+### Step 1: Install Pytest and HTTPX
+In your backend terminal (make sure `(venv)` is active), run:
+```bash
+pip install pytest httpx
+```
+
+### Step 2: Create `test_main.py`
+In your `backend` folder, create a new file called `test_main.py`.
+
+Paste this code inside:
+
+```python
+from fastapi.testclient import TestClient
+from main import app
+import pytest
+
+client = TestClient(app)
+
+# A fake JWT token for Saima (we bypass the signature check in our code for testing)
+SAIMA_TOKEN = "Bearer fake-token-for-saima"
+ALEX_TOKEN = "Bearer fake-token-for-alex"
+
+# We need to mock the token decoding so it doesn't fail on fake tokens
+from jose import jwt
+
+def mock_get_unverified_claims(token):
+    if "saima" in token:
+        return {"email": "saima@test.com"}
+    elif "alex" in token:
+        return {"email": "alex@test.com"}
+    return {}
+
+jwt.get_unverified_claims = mock_get_unverified_claims
+
+def test_get_ideas_requires_auth():
+    """Test that hitting the API without a token returns 401"""
+    response = client.get("/ideas")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing Authorization Header"
+
+def test_create_idea():
+    """Test that Saima can create an idea"""
+    response = client.post(
+        "/ideas",
+        json={"user_id": "saima@test.com", "content": "Pytest idea", "url": None},
+        headers={"Authorization": SAIMA_TOKEN}
+    )
+    assert response.status_code == 200
+    assert response.json()["content"] == "Pytest idea"
+
+def test_get_ideas_isolation():
+    """CRITICAL TEST: Prove Alex cannot see Saima's ideas"""
+    # First, Saima creates an idea
+    client.post(
+        "/ideas",
+        json={"user_id": "saima@test.com", "content": "Saima's secret", "url": None},
+        headers={"Authorization": SAIMA_TOKEN}
+    )
+    
+    # Now, Alex asks for ideas
+    response = client.get("/ideas", headers={"Authorization": ALEX_TOKEN})
+    data = response.json()
+    
+    # Alex should NOT see Saima's secret
+    for idea in data:
+        assert idea["content"] != "Saima's secret"
+
+def test_create_idea_for_other_user_fails():
+    """Test that Saima cannot create an idea for Alex"""
+    response = client.post(
+        "/ideas",
+        json={"user_id": "alex@test.com", "content": "Hacked idea", "url": None},
+        headers={"Authorization": SAIMA_TOKEN} # Saima's token, but Alex's ID
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "You can only create ideas for yourself"
+
+def test_invalid_token():
+    """Test that a garbage token returns 401"""
+    response = client.get("/ideas", headers={"Authorization": "Bearer invalid_token"})
+    assert response.status_code == 401
+```
+
+### Step 3: Run the Tests
+In your backend terminal, run:
+```bash
+pytest test_main.py -v
+```
+
+You should see all 5 tests pass with a green `PASSED`! 
+
+*(This proves to the reviewer that your backend is secure).*
+
+### Step 4: Commit to GitHub
+```bash
+git add .
+git commit -m "Day 8: Added Pytest suite for security and isolation"
+git push
+```
+
+Let me know when the tests pass! Then we will do the final piece: **Playwright (QA Track)** and writing the `thinking.md` essay!
 
 
 
