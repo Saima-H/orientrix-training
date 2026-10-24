@@ -3824,6 +3824,10 @@ so basically the testcase which didnt pass was coz of this line --->>>assert res
 
 # all test cases passed
 <img width="1267" height="646" alt="image" src="https://github.com/user-attachments/assets/88f75219-4ae1-4c15-8e86-46c2f998762b" />
+# when i used play wright
+(tragedyyyyyyyyyyyyyyyyyyyy)
+
+<img width="1279" height="646" alt="image" src="https://github.com/user-attachments/assets/03a5d467-5146-4ceb-804a-2887c269dcd6" />
 
 
 
