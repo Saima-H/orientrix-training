@@ -1,0 +1,170 @@
+Creating a separate repository for the QA track is a **brilliant idea**. It keeps your Developer repo (Idea Vault) clean and your QA repo (SauceDemo) separate, which looks highly professional to recruiters and reviewers.
+
+Here are the basics first, then the step-by-step guide from scratch.
+
+---
+
+### 🧠 The Basics: What is Playwright?
+
+1. **What is it?** Playwright is an automated browser testing tool created by Microsoft. 
+2. **What does it do?** Instead of you manually opening a browser, typing a username, and clicking "Login", Playwright writes a script that does it for you in milliseconds.
+3. **What is `--headed`?** By default, Playwright runs in "headless" mode (invisible). If you add `--headed`, you get to watch the browser open, type, and click automatically like a ghost is using your computer. It's magical to watch.
+4. **What is a `test`?** A test is just a block of code that says: *"Go to this page, click this button, and `expect` this text to appear."* If the text doesn't appear, the test fails (turns red). If it does, the test passes (turns green).
+
+---
+
+### 🚀 Step-by-Step: New QA Repository
+
+#### Step 1: Create the New Repo on GitHub
+1. Go to [github.com/new](https://github.com/new).
+2. Name it: `qa-saucedemo-playwright`.
+3. Make it **Public** (or Private, your choice).
+4. **Do not** check "Add a README" or ".gitignore".
+5. Click **Create repository**.
+6. Leave this page open, you will need the URL in a minute.
+
+#### Step 2: Setup the Folder on your Computer
+Open your terminal. Do **not** go inside `idea-vault`. Go to your Desktop or Documents.
+
+```bash
+# 1. Create a new folder
+mkdir qa-saucedemo-playwright
+cd qa-saucedemo-playwright
+
+# 2. Initialize Git
+git init
+
+# 3. Initialize Node.js (creates package.json)
+npm init -y
+
+# 4. Install Playwright
+npm install -D @playwright/test
+
+# 5. Install the Chromium browser for Playwright
+npx playwright install chromium
+```
+
+#### Step 3: Create the Test File
+1. Inside this new folder, create a file named **`saucedemo.spec.ts`**.
+2. Paste this code inside (this covers all 5 requirements):
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('1. Successful login', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.fill('#user-name', 'standard_user');
+  await page.fill('#password', 'secret_sauce');
+  await page.click('#login-button');
+  await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
+});
+
+test('2. Login failure with incorrect password', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.fill('#user-name', 'standard_user');
+  await page.fill('#password', 'wrong_password');
+  await page.click('#login-button');
+  await expect(page.locator('[data-test="error"]')).toBeVisible();
+});
+
+test('3. Adding a product to the cart', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.fill('#user-name', 'standard_user');
+  await page.fill('#password', 'secret_sauce');
+  await page.click('#login-button');
+  
+  await page.click('#add-to-cart-sauce-labs-backpack');
+  await expect(page.locator('.shopping_cart_badge')).toHaveText('1');
+});
+
+test('4. Completing the checkout flow', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.fill('#user-name', 'standard_user');
+  await page.fill('#password', 'secret_sauce');
+  await page.click('#login-button');
+  
+  await page.click('#add-to-cart-sauce-labs-backpack');
+  await page.click('.shopping_cart_link');
+  await page.click('#checkout');
+  
+  await page.fill('#first-name', 'Saima');
+  await page.fill('#last-name', 'Khan');
+  await page.fill('#postal-code', '12345');
+  await page.click('#continue');
+  await page.click('#finish');
+  
+  await expect(page.locator('.complete-header')).toHaveText('Thank you for your order!');
+});
+
+test('5. Logging out', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.fill('#user-name', 'standard_user');
+  await page.fill('#password', 'secret_sauce');
+  await page.click('#login-button');
+  
+  await page.click('#react-burger-menu-btn');
+  await page.click('#logout_sidebar_link');
+  await expect(page).toHaveURL('https://www.saucedemo.com/');
+});
+```
+
+#### Step 4: Run the Tests!
+In your terminal, run:
+```bash
+npx playwright test saucedemo.spec.ts --headed
+```
+Watch the magic happen. You should see a browser open, log in, add a backpack, and check out. At the end, the terminal should say **`5 passed`**.
+
+#### Step 5: Create the `README.md`
+The assignment says: *"README.md: Document how to install the dependencies and run your tests."*
+1. Create a file named `README.md` in this new folder.
+2. Paste this:
+
+```markdown
+# SauceDemo QA Automation Tests
+
+This repository contains automated end-to-end tests for [saucedemo.com](https://www.saucedemo.com) using Playwright.
+
+## Prerequisites
+- Node.js installed
+
+## How to Install Dependencies
+Run the following command in the terminal:
+\`\`\`bash
+npm install
+npx playwright install chromium
+\`\`\`
+
+## How to Run the Tests
+To run the tests in headless mode (invisible):
+\`\`\`bash
+npx playwright test
+\`\`\`
+
+To watch the tests run in the browser:
+\`\`\`bash
+npx playwright test --headed
+\`\`\`
+```
+
+#### Step 6: Create the `thinking.md`
+Create a file named `thinking.md` in this folder and paste the 5 exam results scenarios we discussed earlier.
+
+#### Step 7: Push to GitHub
+1. Create a `.gitignore` file and add `node_modules/` inside it (so you don't upload 500MB of dependencies).
+2. Run these commands (replace `YOUR_USERNAME`):
+
+```bash
+git add .
+git commit -m "Initial commit: Playwright tests for SauceDemo"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/qa-saucedemo-playwright.git
+git push -u origin main
+```
+
+---
+
+### 🏁 You are done!
+Once you push this new repo, you have officially completed **100% of the assignment**. 
+
+Reply when the tests pass and the repo is live!
