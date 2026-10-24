@@ -1,1 +1,28 @@
+# 🧪 SauceDemo QA Automation Tests (Playwright)
+
+This repository contains 5 automated end-to-end (E2E) browser tests for [saucedemo.com](https://www.saucedemo.com), written using **Playwright** and **TypeScript**.
+
+## 📋 Test Coverage
+The automated test suite covers the following 5 critical user flows:
+1. **Successful Login:** Verifies a user can log in with valid credentials.
+2. **Login Failure:** Verifies the error message appears when using an incorrect password.
+3. **Add to Cart:** Verifies a product can be added and the cart badge updates.
+4. **Checkout Flow:** Verifies a user can complete the full checkout process.
+5. **Log Out:** Verifies a user can successfully log out via the side menu.
+
+## 🛠️ Prerequisites
+Before running the tests, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+
+## 📦 How to Install Dependencies
+Clone this repository to your local machine and navigate into the folder. Then run:
+
+```bash
+# Install Node modules
+npm install
+
+# Install the Playwright Chromium browser
+npx playwright install chromium
+
+
 
