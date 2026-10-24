@@ -14,6 +14,13 @@ Headless vs. Headed:
 Headless: The browser runs invisibly in the background. (Fast, used by companies).
 
 Headed: You actually see the browser open, type, and click by itself. (Fun, used for debugging).
+# HEADLESS
+<img width="1274" height="636" alt="image" src="https://github.com/user-attachments/assets/88283ca4-ecdd-4f22-a256-ecf88db84912" />
+
+# HEADED
+(THE WEBSITE LITERALLY OPENED AND CLOSED LOL!)
+<img width="638" height="320" alt="image" src="https://github.com/user-attachments/assets/e8eb3804-8eda-480d-a7a8-becea31c2b8d" />
+
 
 
 
