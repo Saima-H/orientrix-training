@@ -81,4 +81,3 @@ flowchart TD
 
 ---
 
-**Does this make the transformation clear?** If you are ready, we can start building the 5 new tables in Supabase (Day 2)!
