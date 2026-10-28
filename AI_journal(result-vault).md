@@ -227,3 +227,80 @@ flowchart TD
     Relational -.->|On Update| Audit
 ```
 
+# BUT RLS IS ONLY FOR STUDENTS BUT IT SHLD BE FOR TEACHERS AS WELL
+**You are 100% right, and this is an excellent catch.** 
+
+In the diagram, I visually routed the Student path straight through RLS, but routed the Teacher path through the API first. That was a poor visual choice on my part. 
+
+**RLS is a database-level firewall. It applies to EVERY SINGLE QUERY that hits the database, regardless of who is asking.** 
+
+Here is the exact breakdown of how RLS works for both roles, and below that, the corrected diagram.
+
+### How RLS applies to Teachers vs. Students
+RLS doesn't mean "block everyone." It means "apply the rules based on who is logged in." 
+
+**1. The Student RLS Policy:**
+*   **Rule:** `auth.uid() = student_id AND status = 'Published'`
+*   **Meaning:** A student can only `SELECT` rows that belong to them, AND they cannot see the row if the teacher hasn't clicked "Publish" yet.
+
+**2. The Teacher RLS Policy:**
+*   **Rule:** `auth.jwt() ->> 'role' = 'teacher'` (or a specific school/class ID check).
+*   **Meaning:** A teacher can see all students in their assigned classes. But here is the kicker: **Teachers should NOT be allowed to delete the Audit Logs.** RLS would be used to ensure a teacher can `INSERT` into `mark_changes` but cannot `UPDATE` or `DELETE` from it.
+
+### The "Master Password" Nuance (Why we still need RBAC)
+Remember our earlier conversation about the "Master Key"? 
+Right now, your FastAPI backend connects to Supabase using the `postgres` user. **This user bypasses RLS entirely.** 
+
+So, if a hacker logs in as a Student but tricks FastAPI into running a query without filtering, RLS won't catch it because FastAPI is using the Master Key. 
+*   **That is why we have RBAC (Role-Based Access Control) in FastAPI.** The API checks the JWT: *"Are you a teacher? Yes? Okay, you can run this query."*
+*   **RLS is the second line of defense.** If a hacker somehow bypasses FastAPI and talks *directly* to Supabase using the frontend anon key, RLS will physically block them from reading other students' data.
+
+---
+
+### The Corrected Diagram
+
+Here is the fixed architecture where **every single request** goes through the API/RBAC layer, and then **every single database query** goes through the RLS firewall.
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check"}
+        Engine["Marking Engine"]
+        Matcher["Fuzzy Matcher"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(Database Firewall)"}
+        Relational[("Relational Tables<br/>(Students, Papers, Marks)")]
+        Audit[("Audit Logs<br/>(Read-Only for All)")]
+    end
+
+    %% Teacher Flow
+    T_Dash -->|Request| RBAC
+    RBAC -->|Teacher Authorized| Engine
+    RBAC -->|Teacher Authorized| Matcher
+    Engine -->|SQL Query| RLS
+    Matcher -->|SQL Query| RLS
+
+    %% Student Flow
+    S_Dash -->|Request| RBAC
+    RBAC -->|Student Authorized| RLS
+
+    %% The RLS Firewall
+    RLS -->|"Teacher Policy: Can view all students in their class"| Relational
+    RLS -->|"Student Policy: Can only view own published marks"| Relational
+    
+    Relational -.->|On Update| Audit
+    RLS -->|"Audit Policy: NOBODY can UPDATE or DELETE"| Audit
+```
+
+### Why this architecture is bulletproof:
+1.  **Layer 1 (FastAPI RBAC):** Blocks students from hitting teacher endpoints like `POST /marks`.
+2.  **Layer 2 (Database RLS):** Even if a student somehow tricks FastAPI into running a query for someone else's marks, RLS checks the student's JWT and says: *"You are not allowed to read this row. I am returning an empty set."*
+
+You are officially thinking like a Senior Backend Engineer by questioning the placement of the security layers. Let's keep this architecture in mind as we build. Are you ready to create the tables?
