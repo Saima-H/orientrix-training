@@ -79,5 +79,151 @@ flowchart TD
 3.  **The Marking Engine:** Pure Python math for rounding and choice groups.
 4.  **Database Triggers:** A Postgres function that creates an un-deletable audit trail.
 
+
+
 ---
+
+Here is the detailed architecture for both applications. 
+
+I have broken them down into their specific layers (Frontend, Backend, Database, Security), and at the bottom, you will find the Mermaid diagrams that visually map out the systems.
+
+---
+
+# 🏗️ 1. IDEA VAULT Architecture (Current)
+
+**The Concept:** A simple, single-user diary app. The focus is on basic CRUD (Create, Read, Update, Delete) and identifying the user via a token.
+
+### 1. Frontend (Next.js + TypeScript + Tailwind)
+*   **Routing:** Two pages: `/` (Login) and `/dashboard` (The App).
+*   **UI:** A single form to add text/URLs, and a list that displays the ideas with colored tag badges.
+*   **State:** Uses React `useState` to hold the list of ideas and `useEffect` to fetch them on load.
+*   **Auth:** Uses `supabase.auth` to log in and grabs the JWT token to send to the backend.
+
+### 2. Backend (FastAPI + Python)
+*   **Routing:** Two endpoints: `GET /ideas` and `POST /ideas`.
+*   **Logic:** 
+    *   **Mock NLP:** Simple Python string matching (`if "app" in text`) to auto-generate tags.
+    *   **Security:** Strict JWT decoding (`jwt.decode`) using the Supabase Secret.
+*   **Data handling:** Extracts the user's email from the verified JWT and uses it to filter data.
+
+### 3. Database (Supabase PostgreSQL)
+*   **Tables:** Just one table (`ideas`).
+*   **Schema:** `id`, `user_id`, `content`, `url`, `tags`.
+*   **Relationships:** None. It's a flat table.
+*   **Security:** RLS is enabled on the table (checking `auth.email() = user_id`), but the FastAPI backend connects via a master password and filters data in Python.
+
+### 4. Testing
+*   **Pytest:** Tests to ensure users can only read their own data and that fake JWT tokens are rejected.
+
+---
+
+# 🏗️ 2. RESULTS VAULT Architecture (Target)
+
+**The Concept:** A high-security, multi-role school examination system. The focus is on relational data, complex math, file storage, and strict authorization.
+
+### 1. Frontend (Next.js + TypeScript)
+*   **Routing:** Multiple views based on role.
+    *   `/login`
+    *   `/teacher` (Upload scripts, review fuzzy matches, input marks, publish results).
+    *   `/student` (View published results only).
+*   **State:** Complex state for handling file uploads (for scanned scripts) and real-time mark calculations.
+
+### 2. Backend (FastAPI + Python)
+*   **Routing:** Multiple endpoints (`/papers`, `/questions`, `/marks`, `/scripts`).
+*   **Logic:**
+    *   **RBAC (Role-Based Access Control):** Checks if the JWT token belongs to a Teacher or a Student. Students get `403 Forbidden` if they try to hit teacher endpoints.
+    *   **Marking Engine:** A pure Python module that handles the complex math (rounding to nearest 0.5, calculating "best 2 of 4" questions, applying grace marks).
+    *   **Fuzzy Matcher:** An algorithm (like Levenshtein distance) that tries to match messy handwritten names on scanned scripts to the database of students.
+*   **Data handling:** Talks to both the Database (for marks) and Supabase Storage (for PDFs/Images of the answer scripts).
+
+### 3. Database (Supabase PostgreSQL)
+*   **Tables:** 5 highly relational tables.
+    *   `students` (Constraint: Roll number unique per class+section).
+    *   `papers`
+    *   `questions` (Supports "choice groups").
+    *   `answer_scripts` (Tracks if a paper is Pending, Graded, or Published).
+    *   `question_marks` (The specific score for each question).
+*   **Audit Logs (Triggers):** A `mark_changes` table. If a teacher changes a mark from 80 to 90, a PostgreSQL trigger automatically logs *who* did it, *when*, and *what* the old/new marks were. This table is immutable (cannot be deleted or updated).
+
+### 4. Storage
+*   **Supabase Storage:** A cloud bucket to store the actual images/PDFs of the scanned answer scripts.
+
+### 5. Testing
+*   **Pytest:** Tests the Marking Engine math, tests RBAC (proving Student A can't read Student B's marks).
+*   **Playwright:** E2E tests that log in as a student and try to access another student's URL.
+
+---
+
+# 📊 The Visual Architecture Diagrams
+
+### 🔹 Idea Vault Architecture Diagram
+```mermaid
+flowchart LR
+    subgraph Frontend ["Next.js Frontend"]
+        Login["Login Page"]
+        Dash["Dashboard<br/>(Add/View Ideas)"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        Auth["JWT Verification"]
+        NLP["Mock NLP<br/>(Keyword Tags)"]
+        CRUD["CRUD Endpoints<br/>(/ideas)"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        Table[("ideas Table<br/>(id, user_id, content, url, tags)")]
+    end
+
+    Login -->|Auth Token| Dash
+    Dash -->|GET / POST| Auth
+    Auth --> CRUD
+    CRUD --> NLP
+    CRUD -->|SQLAlchemy| Table
+```
+
+<br>
+
+### 🔹 Results Vault Architecture Diagram
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard<br/>(Upload, Edit, Publish)"]
+        S_Dash["Student Portal<br/>(View Published Results)"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Answer Scripts<br/>(PDFs / Images)")]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC["JWT Verification +<br/>Role-Based Access Control"]
+        
+        Matcher["Fuzzy Name Matcher<br/>(Matches handwritten names)"]
+        Engine["Marking Engine<br/>(Math, Rounding, Choices)"]
+        
+        API["API Endpoints<br/>(/marks, /scripts)"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+        RLS{"Row Level Security<br/>(DB-level filter)"}
+    end
+
+    T_Dash -->|1. Upload| Storage
+    T_Dash -->|2. Trigger Match| RBAC
+    RBAC -->|Teacher Role| Matcher
+    Matcher -->|Suggest ID| T_Dash
+    
+    T_Dash -->|3. Input Marks| RBAC
+    RBAC -->|Teacher Role| Engine
+    Engine --> API
+    
+    S_Dash -->|View Results| RBAC
+    RBAC -->|Student Role| RLS
+    
+    API --> RLS
+    RLS --> Relational
+    Relational -.->|On Update| Audit
+```
 
