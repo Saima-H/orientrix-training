@@ -4115,6 +4115,47 @@ During this fix, we encountered three major issues:
 ```
 
 
+Good catch! Let's do the backup right now before we write any hacking code. It takes 10 seconds and gives you total peace of mind.
+
+Since you have an uncommitted change (the deleted `test_db.py`), let's clean that up first, and then create the backup.
+
+### Step 1: Commit the cleanup
+Run these commands in your terminal (inside `idea-vault`):
+```bash
+git add .
+git commit -m "Chore: Remove temporary database test file"
+git push
+```
+
+### Step 2: Create the Backup Branch
+Now, create a branch that acts as a snapshot of your app *before* we break it.
+```bash
+git branch backup-before-hack
+```
+
+### Step 3: Push the Backup to GitHub
+This sends that backup branch to GitHub so you have it in the cloud.
+```bash
+git push origin backup-before-hack
+```
+
+---
+
+### How this backup works (and how to use it)
+You are currently on the `main` branch. The `backup-before-hack` branch is now a perfect copy of your code from this exact moment. 
+
+If we hack the app, fix it, and everything works perfectly—great! You just keep working on `main` and forget the backup exists.
+
+But if something goes horribly wrong and you want to instantly undo everything we do today, you can just run:
+```bash
+git checkout backup-before-hack
+```
+And your code will instantly rewind to this safe state.
+
+**Let me know when you see the backup branch on GitHub!** Then we will start the hack.
+
+
+# HACK THE APP 
 
 
 
