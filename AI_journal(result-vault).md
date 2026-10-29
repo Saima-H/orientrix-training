@@ -1629,6 +1629,76 @@ for student_id in range(1, 31):
 "
 ```
 
+
+but its multiline so running it in terminal is difficult so basically do this 
+
+Ah, my bad! PowerShell can be extremely stubborn when you try to paste massive blocks of code with quotes and indentation directly into the terminal. It usually breaks the text apart and throws syntax errors.
+
+The easiest and most professional way to do this is to **put the script in a file** and run that file. 
+
+Here is exactly how to do it:
+
+### Step 1: Create a Python file
+1. Open VS Code, go to your `backend` folder.
+2. Create a new file called **`seed_data.py`**.
+3. Copy and paste this exact code into the file (no terminal quotes needed):
+
+```python
+import random
+
+print('-- Insert 3 sections of students (10 each)')
+for section in ['A', 'B', 'C']:
+    for i in range(1, 11):
+        name = f'Student_{section}_{i}'
+        roll = i
+        adm = f'ADM_{section}_{i}'
+        print(f"INSERT INTO students (name, roll_number, class, section, admission_number) VALUES ('{name}', {roll}, '10', '{section}', '{adm}');")
+
+print('-- Insert 2 Papers')
+print("INSERT INTO papers (name, total_max_marks) VALUES ('Math Midterm', 100);")
+print("INSERT INTO papers (name, total_max_marks) VALUES ('Science Final', 100);")
+
+print('-- Insert Questions for Math Paper (Paper 1)')
+for i in range(1, 6):
+    print(f"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (1, {i}, 20, NULL);")
+
+print('-- Insert Questions for Science Paper (Paper 2)')
+print("INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 1, 25, 'Group A');")
+print("INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 2, 25, 'Group A');")
+print("INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 3, 25, 'Group B');")
+print("INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 4, 25, 'Group B');")
+
+print('-- Create Answer Scripts and Assign Random Marks to Students')
+for student_id in range(1, 31):
+    print(f"INSERT INTO answer_scripts (id, paper_id, student_id) VALUES ({student_id}, 1, {student_id});")
+    for q_id in range(1, 6):
+        mark = random.randint(5, 20)
+        print(f"INSERT INTO question_marks (script_id, question_id, marks_obtained) VALUES ({student_id}, {q_id}, {mark});")
+```
+
+### Step 2: Run the file
+1. Make sure your terminal is in the `backend` folder and `(venv)` is active.
+2. Run this command:
+```bash
+python seed_data.py
+```
+
+### Step 3: Copy the output
+1. The terminal will print a massive list of `INSERT INTO...` lines.
+2. Scroll to the top of the output, highlight all of it, and copy it (`Ctrl+C` or right-click -> Copy).
+
+### Step 4: Run it in Supabase
+1. Go to **Supabase** -> **SQL Editor**.
+2. Paste all the copied SQL and click **Run**.
+
+*(You can delete `seed_data.py` after this if you want, or keep it in your repo as documentation for how you generated the data).*
+
+
+
+
+
+
+
 **Action 2: Run the Seed Data in Supabase**
 1. Copy the massive block of SQL output from your terminal.
 2. Go to **Supabase** -> **SQL Editor**.
