@@ -1177,3 +1177,153 @@ If you try to save a base64-encoded image of a scanned paper directly into a Pos
 ### Summary
 *   **PostgreSQL Database** = The **Brain** (stores the numbers, names, and marks).
 *   **Supabase Storage** = The **Filing Cabinet** (stores the heavy PDFs and images).
+
+  # LET'S START BUILDING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Got it. Here is **Step 1** in the exact format you requested: Pre-requisites, Step Summary, Architecture Tracker, and then the exact Process to execute.
+
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+Before you do this, you need to understand these three concepts:
+*   **Relational Databases:** A database where tables are linked to each other. For example, the `marks` table uses a `student_id` to link to the `students` table.
+*   **Primary Key vs. Foreign Key:** 
+    *   *Primary Key:* The unique ID for a row (e.g., `student_id = 5`).
+    *   *Foreign Key:* A column that points to a Primary Key in another table (e.g., `student_id` in the `marks` table points back to the `students` table).
+*   **Database Constraints:** Rules enforced by the database itself. If you try to insert data that breaks the rule, the database throws an error and rejects it. We need this so two students in the same class/section can't have the same roll number.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+**Goal:** Create the 5 relational tables in Supabase and save the SQL as a migration file.
+1.  Create a folder called `migrations` in your root `idea-vault` directory.
+2.  Create a file named `001_create_results_tables.sql` inside it.
+3.  Paste the SQL code into the file and save it.
+4.  Go to the **Supabase SQL Editor**, paste the code, and click **Run**.
+5.  Verify the 5 tables appear in the **Table Editor**.
+6.  Run `git add .` -> `git commit` -> `git push`.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+We are currently building the **Database Schema** (highlighted in bright green).
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        Engine["Marking Engine"]
+        Matcher["Fuzzy Matcher"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Scripts<br/>(PDFs)")]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(DB Firewall)"}
+        
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Relational fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    Relational -- "👉 WE ARE HERE (Step 1) 👈" --> Relational
+
+    %% Existing Flows
+    T_Dash -->|Upload| Storage
+    T_Dash -->|Input Marks| RBAC
+    S_Dash -->|View Results| RBAC
+    
+    RBAC --> Engine
+    RBAC --> Matcher
+    
+    Engine -->|SQL| RLS
+    Matcher -->|SQL| RLS
+    
+    RLS --> Relational
+    Relational -.->|Trigger| Audit
+    RLS --> Audit
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Create the Migration File**
+1. Open your `idea-vault` folder in VS Code.
+2. Create a new folder called **`migrations`** (at the root level).
+3. Inside the `migrations` folder, create a file named **`001_create_results_tables.sql`**.
+4. Paste this exact SQL code into it and **save**:
+
+```sql
+-- ==========================================
+-- RESULTS VAULT SCHEMA
+-- ==========================================
+
+-- 1. Students Table
+CREATE TABLE IF NOT EXISTS students (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    roll_number INT NOT NULL,
+    class VARCHAR(50) NOT NULL,
+    section VARCHAR(10) NOT NULL,
+    admission_number VARCHAR(50) UNIQUE NOT NULL,
+    -- THE CRITICAL CONSTRAINT: Roll number is unique ONLY within a class and section
+    CONSTRAINT unique_roll_per_section UNIQUE (class, section, roll_number)
+);
+
+-- 2. Papers Table
+CREATE TABLE IF NOT EXISTS papers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    total_max_marks INT NOT NULL
+);
+
+-- 3. Questions Table
+CREATE TABLE IF NOT EXISTS questions (
+    id SERIAL PRIMARY KEY,
+    paper_id INT REFERENCES papers(id) ON DELETE CASCADE,
+    question_number INT NOT NULL,
+    max_marks NUMERIC(5, 2) NOT NULL,
+    choice_group VARCHAR(50) -- e.g., 'Group A' for "Answer any 2 of 4"
+);
+
+-- 4. Answer Scripts Table
+CREATE TABLE IF NOT EXISTS answer_scripts (
+    id SERIAL PRIMARY KEY,
+    paper_id INT REFERENCES papers(id) ON DELETE CASCADE,
+    student_id INT REFERENCES students(id) ON DELETE CASCADE,
+    status VARCHAR(50) DEFAULT 'Pending' -- Pending, Graded, Published
+);
+
+-- 5. Question Marks Table
+CREATE TABLE IF NOT EXISTS question_marks (
+    id SERIAL PRIMARY KEY,
+    script_id INT REFERENCES answer_scripts(id) ON DELETE CASCADE,
+    question_id INT REFERENCES questions(id) ON DELETE CASCADE,
+    marks_obtained NUMERIC(5, 2) NOT NULL,
+    is_best_choice BOOLEAN DEFAULT FALSE
+);
+```
+
+**Action 2: Run the Migration in Supabase**
+1. Go to your **Supabase Dashboard**.
+2. Click **SQL Editor** on the left menu -> **New Query**.
+3. Copy the code from your `.sql` file, paste it, and click **Run**.
+4. Go to **Table Editor**. You should see all 5 tables created!
+
+**Action 3: Push to GitHub**
+Open your terminal in the root `idea-vault` folder:
+```bash
+git add .
+git commit -m "Step 1: Results Vault Database Schema"
+git push
+```
+
