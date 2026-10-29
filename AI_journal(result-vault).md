@@ -1519,3 +1519,204 @@ Using a tool is just the first step. Here are the critical practices for a produ
   <img width="1279" height="593" alt="image" src="https://github.com/user-attachments/assets/f14a6fcd-57f4-4603-9a8b-a1e3f25095f0" />
 
 
+Awesome! Let's knock out **Step 2**. 
+
+Here is your complete guide for this step.
+
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+*   **Seed Data:** Fake data used to test the application before real users arrive.
+*   **`INSERT` Statements:** The SQL command used to add rows into a table.
+*   **`JOIN`:** Combining data from two or more tables (e.g., linking a student to their marks).
+*   **Window Functions:** The `RANK() OVER (PARTITION BY ...)` syntax. It calculates a rank (1st, 2nd, 3rd) within a specific group (like a section) without collapsing the rows.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+1.  Generate 30 fake students and random marks using a Python script.
+2.  Paste the generated SQL into the Supabase SQL Editor to populate your tables.
+3.  Create `results_queries.sql` with 10 advanced SQL queries.
+4.  Test Query 3 (the Window Function) in Supabase.
+5.  Commit to GitHub.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+We are currently filling the **Relational Tables** with data and writing the queries to read them (highlighted in bright green).
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        Engine["Marking Engine"]
+        Matcher["Fuzzy Matcher"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Scripts<br/>(PDFs)")]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(DB Firewall)"}
+        
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Relational fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    Relational -- "👉 WE ARE HERE (Step 2: Seed Data & Queries) 👈" --> Relational
+
+    %% Existing Flows
+    T_Dash -->|Upload| Storage
+    T_Dash -->|Input Marks| RBAC
+    S_Dash -->|View Results| RBAC
+    RBAC --> Engine
+    RBAC --> Matcher
+    Engine -->|SQL| RLS
+    Matcher -->|SQL| RLS
+    RLS --> Relational
+    Relational -.->|Trigger| Audit
+    RLS --> Audit
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Generate the Test Data**
+1. Open a terminal in your `backend` folder (with `(venv)` active).
+2. Run this Python one-liner. It will print a massive block of SQL to your terminal:
+
+```python
+python -c "
+import random
+print('-- Insert 3 sections of students (10 each)')
+for section in ['A', 'B', 'C']:
+    for i in range(1, 11):
+        name = f'Student_{section}_{i}'
+        roll = i
+        adm = f'ADM_{section}_{i}'
+        print(f\"INSERT INTO students (name, roll_number, class, section, admission_number) VALUES ('{name}', {roll}, '10', '{section}', '{adm}');\")
+
+print('-- Insert 2 Papers')
+print(\"INSERT INTO papers (name, total_max_marks) VALUES ('Math Midterm', 100);\")
+print(\"INSERT INTO papers (name, total_max_marks) VALUES ('Science Final', 100);\")
+
+print('-- Insert Questions for Math Paper (Paper 1)')
+for i in range(1, 6):
+    print(f\"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (1, {i}, 20, NULL);\")
+
+print('-- Insert Questions for Science Paper (Paper 2)')
+print(\"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 1, 25, 'Group A');\")
+print(\"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 2, 25, 'Group A');\")
+print(\"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 3, 25, 'Group B');\")
+print(\"INSERT INTO questions (paper_id, question_number, max_marks, choice_group) VALUES (2, 4, 25, 'Group B');\")
+
+print('-- Create Answer Scripts and Assign Random Marks to Students')
+for student_id in range(1, 31):
+    print(f\"INSERT INTO answer_scripts (id, paper_id, student_id) VALUES ({student_id}, 1, {student_id});\")
+    for q_id in range(1, 6):
+        mark = random.randint(5, 20)
+        print(f\"INSERT INTO question_marks (script_id, question_id, marks_obtained) VALUES ({student_id}, {q_id}, {mark});\")
+"
+```
+
+**Action 2: Run the Seed Data in Supabase**
+1. Copy the massive block of SQL output from your terminal.
+2. Go to **Supabase** -> **SQL Editor**.
+3. Paste it and click **Run**.
+*(Go to Table Editor -> `students`. You should see 30 students!)*
+
+**Action 3: Create the Queries File**
+1. In VS Code, create a file called `results_queries.sql` inside your `migrations` folder.
+2. Paste these 10 queries into it and save:
+
+```sql
+-- Query 1: Get all students in Class 10, Section A
+SELECT * FROM students WHERE class = '10' AND section = 'A';
+
+-- Query 2: Class Average per Question (For Paper 1)
+SELECT q.question_number, ROUND(AVG(qm.marks_obtained), 2) as class_average
+FROM questions q
+JOIN question_marks qm ON q.id = qm.question_id
+WHERE q.paper_id = 1
+GROUP BY q.question_number
+ORDER BY q.question_number;
+
+-- Query 3: Rank within Section (Window Function)
+SELECT s.name, s.section, SUM(qm.marks_obtained) as total_marks,
+       RANK() OVER (PARTITION BY s.section ORDER BY SUM(qm.marks_obtained) DESC) as rank_in_section
+FROM students s
+JOIN answer_scripts ans ON s.id = ans.student_id
+JOIN question_marks qm ON ans.id = qm.script_id
+WHERE ans.paper_id = 1
+GROUP BY s.id, s.name, s.section;
+
+-- Query 4: Students missing a paper (e.g., Paper 2)
+SELECT s.name 
+FROM students s
+LEFT JOIN answer_scripts ans ON s.id = ans.student_id AND ans.paper_id = 2
+WHERE ans.id IS NULL;
+
+-- Query 5: Top 3 students overall
+SELECT s.name, SUM(qm.marks_obtained) as total_marks
+FROM students s
+JOIN answer_scripts ans ON s.id = ans.student_id
+JOIN question_marks qm ON ans.id = qm.script_id
+GROUP BY s.id, s.name
+ORDER BY total_marks DESC
+LIMIT 3;
+
+-- Query 6: Count of students per section
+SELECT section, COUNT(*) as student_count
+FROM students
+GROUP BY section;
+
+-- Query 7: Find all questions that are part of a choice group
+SELECT * FROM questions WHERE choice_group IS NOT NULL;
+
+-- Query 8: Get total marks a specific student got in Math (Student ID 1)
+SELECT s.name, SUM(qm.marks_obtained) as math_total
+FROM students s
+JOIN answer_scripts ans ON s.id = ans.student_id
+JOIN question_marks qm ON ans.id = qm.script_id
+WHERE s.id = 1 AND ans.paper_id = 1
+GROUP BY s.name;
+
+-- Query 9: Average marks per paper
+SELECT p.name, ROUND(AVG(qm.marks_obtained), 2) as average_mark_per_question
+FROM papers p
+JOIN questions q ON p.id = q.paper_id
+JOIN question_marks qm ON q.id = qm.question_id
+GROUP BY p.name;
+
+-- Query 10: The Highest scoring question across all papers
+SELECT q.id, q.question_number, p.name as paper_name, MAX(qm.marks_obtained) as highest_mark
+FROM questions q
+JOIN question_marks qm ON q.id = qm.question_id
+JOIN papers p ON q.paper_id = p.id
+GROUP BY q.id, q.question_number, p.name
+ORDER BY highest_mark DESC
+LIMIT 1;
+```
+
+**Action 4: Test Query 3 (The Window Function)**
+Copy Query 3 and run it in the Supabase SQL Editor. You will see the students ranked 1st, 2nd, 3rd within their respective sections. This is the hardest query, and you just built it!
+
+**Action 5: Commit to GitHub**
+```bash
+git add .
+git commit -m "Step 2: Generated seed data and wrote 10 advanced SQL queries"
+git push
+```
+
+
+
