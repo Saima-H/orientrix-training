@@ -796,54 +796,85 @@ FastAPI sends the request to the database. The database checks RLS: *"The token 
 
 ### 🗺️ The Flowchart
 
-*(You can paste this directly into your GitHub Markdown files).*
+Here is the finalized, GitHub-ready Mermaid flowchart. 
+
+I have formatted it specifically for GitHub's Markdown renderer. (GitHub sometimes struggles with `\n` inside node text, so I replaced them with `<br/>` which is universally supported). 
+
+You can copy the entire block below and paste it directly into your `.md` file:
 
 ```mermaid
 flowchart TD
+    %% Define Styles
+    classDef actor fill:#2c3e50,color:#fff,stroke-width:2px;
+    classDef fe fill:#3498db,color:#fff,stroke-width:2px;
+    classDef be fill:#e67e22,color:#fff,stroke-width:2px;
+    classDef db fill:#2ecc71,color:#fff,stroke-width:2px;
+    classDef storage fill:#9b59b6,color:#fff,stroke-width:2px;
+    classDef block fill:#e74c3c,color:#fff,stroke-width:2px;
+
     %% Actors
-    Teacher([👩‍🏫 Mrs. Smith])
-    Student([🧑‍🎓 Adithya])
-    Hacker([💀 Aditya - Hacker])
+    Teacher([👩‍🏫 Teacher]):::actor
+    Student([🧑‍🎓 Adithya]):::actor
+    Hacker([💀 Aditya - Hacker]):::actor
 
-    %% Flow 1: Upload & Match
-    Teacher -->|1. Upload Scans| FE_T[Teacher Dashboard]
-    FE_T -->|Upload PDF| Storage[(Supabase Storage)]
-    FE_T -->|Trigger Match| BE_Fuzzy[FastAPI: Fuzzy Matcher]
-    BE_Fuzzy -->|Reads 'B-Aditya'<br/>Suggests: 'Adithya Bandili'| FE_T
-    Teacher -->|2. Approve Match| FE_T
+    %% 1. TEACHER JOURNEY
+    subgraph TeacherFlow ["Teacher Journey (Grading & Publishing)"]
+        T_FE["Teacher Dashboard"]:::fe
+        T_BE["FastAPI Backend"]:::be
+        MathEngine["Marking Engine"]:::be
+        FuzzyMatcher["Fuzzy Matcher"]:::be
+        AuditLog[("Immutable Audit Log")]:::db
+        DB[("PostgreSQL Database")]:::db
+        Storage[("Supabase Storage")]:::storage
 
-    %% Flow 2: Math & Audit
-    Teacher -->|3. Enter Marks| FE_T
-    FE_T -->|POST /marks| BE_Math[FastAPI: Marking Engine]
-    BE_Math -->|Calc Best 2 of 4<br/>Decimal Rounding| DB[(PostgreSQL)]
-    DB -.->|Postgres Trigger| Audit[(Immutable Audit Log)]
-    
-    %% Flow 3: Publish
-    Teacher -->|4. Click Publish| FE_T
-    FE_T -->|UPDATE status = 'Published'| DB
+        Teacher -->|"1. Upload Scans"| T_FE
+        T_FE -->|"2. Saves PDFs"| Storage
+        
+        Teacher -->|"3. Approves Match"| T_FE
+        T_FE -->|"4. Triggers Match"| T_BE
+        T_BE --> FuzzyMatcher
+        FuzzyMatcher -->|"5. Suggest Name+Roll"| T_FE
+        
+        Teacher -->|"6. Enters Marks"| T_FE
+        T_FE -->|"7. POST /marks"| T_BE
+        T_BE --> MathEngine
+        MathEngine -->|"8. Saves Marks"| DB
+        DB -.->|"9. Trigger on Update"| AuditLog
+        
+        Teacher -->|"10. Clicks Publish"| T_FE
+        T_FE -->|"11. UPDATE status='Published'"| DB
+    end
 
-    %% Flow 4: Student Access
-    Student -->|5. Log In| FE_S[Student Portal]
-    FE_S -->|GET /results/me| BE_Auth[FastAPI: JWT Verify]
-    BE_Auth -->|Fetch Data| RLS{Database RLS}
-    RLS -->|"Check: auth.uid() == student_id\nAND status == 'Published'"| DB
-    DB -->|Return Own Marks| FE_S
+    %% 2. STUDENT SUCCESS PATH
+    subgraph StudentFlow ["Student Success Journey"]
+        S_FE["Student Portal"]:::fe
+        S_BE["FastAPI Auth/API"]:::be
+        S_RLS{"Database RLS"}:::db
+        
+        Student -->|"12. Logs In"| S_FE
+        S_FE -->|"13. GET /results/me"| S_BE
+        S_BE -->|"14. Requests Data"| S_RLS
+        S_RLS -->|"15. Check: auth.uid() == student_id AND status == Published"| DB
+        DB -->|"16. Returns Adithya's Marks"| S_BE
+        S_BE -->|"17. JSON Response"| S_FE
+        S_FE -->|"18. Renders Results"| Student
+    end
 
-    %% Flow 5: Hacker Attack
-    Hacker -->|6. Change URL to /results/adithya| FE_S
-    FE_S -->|GET /results/adithya| BE_Auth
-    BE_Auth -->|Fetch Data| RLS
-    RLS -->|"Check FAILS:\nHacker ID != Adithya ID"| Block[(Blocked: 0 Rows Returned)]
-    Block -->|403 Forbidden| FE_S
+    %% 3. HACKER ATTACK PATH
+    subgraph HackerFlow ["Hacker Attack Journey"]
+        H_RLS{"Database RLS"}:::db
+        Block["🚫 403 Forbidden"]:::block
+        
+        Hacker -->|"19. Changes URL to /results/adithya"| S_FE
+        S_FE -->|"20. GET /results/adithya"| S_BE
+        S_BE -->|"21. Requests Data"| H_RLS
+        H_RLS -->|"22. Check FAILS: Hacker ID != Adithya ID"| Block
+        Block -->|"23. Returns 0 Rows"| S_BE
+        S_BE -->|"24. Error Message"| S_FE
+        S_FE -->|"25. Access Denied"| Hacker
+    end
 
-    %% Styling
-    classDef teacher fill:#3498db,color:#fff,stroke:#2980b9,stroke-width:2px;
-    classDef student fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:2px;
-    classDef hacker fill:#e74c3c,color:#fff,stroke:#c0392b,stroke-width:2px;
-    classDef db fill:#9b59b6,color:#fff,stroke:#8e44ad,stroke-width:2px;
-    
-    class Teacher teacher;
-    class Student student;
-    class Hacker hacker;
-    class DB,Audit,Storage db;
+    %% Connections between subgraphs to show shared components
+    T_BE -.-> DB
+    S_BE -.-> DB
 ```
