@@ -588,9 +588,7 @@ FastAPI will use Python to enforce these same rules (RBAC).
 *   The RLS policies act as the ultimate safety net if someone bypasses FastAPI.
 
 # what is the weakest part of the project and how can i make it strong
-Understood completely. I will never use that name again. From now on, I will refer to the requirements, the assignment, or the Tech Lead. 
 
-Here is the clean, updated version of the previous message, ready for you to copy directly into your journal:
 
 ---
 
@@ -629,3 +627,223 @@ To make it bulletproof:
 *   Let the Database do the security (use the Supabase Client with the user's JWT, not the Master Key).
 *   Use `Decimal` for math and test it with Pytest.
 *   Add a human check for the fuzzy matcher.
+
+# Final architecture
+Here is the final, comprehensive architecture for the Results Vault. This is structured to be pasted directly into your journal or GitHub `README.md`. 
+
+It covers the concepts, the exact layer breakdown, the security model, and the visual diagram.
+
+---
+
+# 🏗️ Results Vault: Final System Architecture
+
+## 1. The Core Concept
+The Results Vault is a multi-role, high-security application designed for school examination management. Unlike a simple CRUD app, it handles sensitive data (grades), complex math (marking engines), messy real-world inputs (handwritten names), and requires strict Role-Based Access Control (RBAC) and database-level security (RLS).
+
+## 2. The Layers
+
+### A. Frontend (Next.js + TypeScript)
+The frontend is split into two distinct interfaces based on the user's role:
+*   **Teacher Dashboard:** 
+    *   Uploads scanned answer scripts (PDFs/Images) directly to Supabase Storage.
+    *   Reviews "Fuzzy Matches" (suggested student IDs for handwritten scripts).
+    *   Inputs marks and views analytics.
+    *   Clicks "Publish" to make results visible to students.
+*   **Student Portal:** 
+    *   A read-only view where students can see their own results, *only* after the teacher has published them.
+
+### B. Backend (FastAPI + Python)
+The FastAPI backend acts as the "Brain" and the primary gatekeeper.
+*   **JWT Verification & RBAC:** Strictly verifies the token signature (using the Supabase Secret). Checks if the user is a Teacher or Student. Students get a `403 Forbidden` if they hit teacher endpoints.
+*   **Marking Engine:** A pure Python module that handles complex math: rounding to the nearest 0.5 using `Decimal`, calculating the "Best 2 of 4" questions, and applying grace marks. 
+*   **Fuzzy Matcher:** An algorithm that suggests student IDs for messy handwritten names. It requires two independent facts to match (e.g., Name AND Roll Number) and defaults to "Unlinked" if the match isn't confident.
+
+### C. Database (Supabase PostgreSQL)
+The database is highly relational and enforces strict rules.
+*   **5 Relational Tables:** `students`, `papers`, `questions`, `answer_scripts`, `question_marks`.
+*   **Constraints:** A student's roll number is unique *only* within their specific class and section (enforced by a `UNIQUE` constraint).
+*   **Immutable Audit Logs:** A `mark_changes` table. PostgreSQL triggers are used to log every mark change (who changed it, old mark, new mark). This table rejects all `UPDATE` and `DELETE` commands—nobody can erase their tracks.
+
+### D. Storage (Supabase Storage)
+*   A secure cloud bucket for storing the heavy files (scanned answer scripts) so they don't bloat the relational database.
+
+---
+
+## 3. The Security Model (Defense in Depth)
+
+This architecture uses a dual-layer security model to prevent data leaks:
+
+1.  **Layer 1: FastAPI (RBAC & Master Key)**
+    *   FastAPI connects to the database using the Master Key (which bypasses RLS).
+    *   Therefore, FastAPI *must* enforce filtering in Python (`db.query(Marks).filter(student_id == current_user)`).
+    *   FastAPI verifies roles and ensures only Teachers can hit grading endpoints.
+2.  **Layer 2: Supabase (Row Level Security - RLS)**
+    *   Acts as the ultimate safety net. If a frontend request bypasses FastAPI and hits the database directly (using the user's JWT), RLS enforces the rules at the database level.
+    *   **Student Policy:** `auth.uid() = student_id AND status = 'Published'`. (Students only see their own published marks).
+    *   **Teacher Policy:** Can read/write marks for the specific papers/subjects they teach.
+    *   **Audit Log Policy:** `UPDATE` and `DELETE` are explicitly set to `FALSE` for everyone.
+
+---
+
+## 4. The Visual Architecture Diagram
+
+*(You can paste this block directly into your GitHub `README.md` and it will render as a diagram).*
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend (TypeScript)"]
+        T_Dash["👩‍🏫 Teacher Dashboard<br/>(Upload, Review Matches, Publish)"]
+        S_Dash["🧑‍🎓 Student Portal<br/>(View Published Results)"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Answer Scripts<br/>(Images / PDFs)")]
+    end
+
+    subgraph Backend ["FastAPI Backend (Python)"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        Matcher["Fuzzy Name Matcher<br/>(Name + Roll Number)"]
+        Engine["Marking Engine<br/>(Decimal Math, Best 2 of 4)"]
+        API["API Endpoints<br/>(/marks, /scripts, /papers)"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(Database Firewall)"}
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    %% Flows
+    T_Dash -->|1. Upload Image| Storage
+    T_Dash -->|2. Input Marks / Trigger Match| RBAC
+    
+    S_Dash -->|View Results| RBAC
+    
+    RBAC -->|Teacher Authorized| Matcher
+    RBAC -->|Teacher Authorized| Engine
+    
+    Matcher -->|Suggest ID| API
+    Engine -->|Calculate Totals| API
+    
+    API -->|SQL Query| RLS
+    
+    %% RLS Enforcement
+    RLS -->|"Teacher Policy: View/Edit assigned papers"| Relational
+    RLS -->|"Student Policy: Read ONLY own published marks"| Relational
+    
+    %% Audit Flows
+    Relational -.->|On Update Trigger| Audit
+    RLS -->|"Audit Policy: NO UPDATE / NO DELETE"| Audit
+
+    classDef frontend fill:#3498db,color:#fff,stroke:#2980b9,stroke-width:2px;
+    classDef backend fill:#e67e22,color:#fff,stroke:#d35400,stroke-width:2px;
+    classDef db fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:2px;
+    classDef storage fill:#9b59b6,color:#fff,stroke:#8e44ad,stroke-width:2px;
+    
+    class T_Dash,S_Dash frontend;
+    class RBAC,Matcher,Engine,API backend;
+    class RLS,Relational,Audit db;
+    class Images storage;
+```
+
+# A scenario explaining flow of the app
+Here is a complete, start-to-end scenario that shows exactly how the application works in the real world. 
+
+I have written the story first so you understand the logic, followed by a visual flowchart you can paste into your GitHub `README.md`.
+
+---
+
+### 🏫 The Scenario: The Math Midterm
+
+**The Actors:**
+*   **Mrs. Smith:** The Math Teacher.
+*   **Adithya Bandili:** A student in Class 10-A.
+*   **Aditya Singh:** Another student in Class 10-A (The trap!).
+
+#### Step 1: The Upload (Teacher)
+Mrs. Smith logs into the Teacher Dashboard. She uploads a batch of 30 scanned PDFs of the Math Midterm. The frontend sends these directly to **Supabase Storage**.
+
+#### Step 2: The Fuzzy Match (Backend)
+FastAPI tells the **Fuzzy Matcher** to read the first PDF. The OCR sees a messy handwritten name: `"B-Aditya"`. 
+Because there are two Adityas in the class, the Fuzzy Matcher does not guess. It suggests: *"Is this Adithya Bandili? (Roll 3)"*.
+Mrs. Smith looks at the scan, clicks **"Approve"**, and the script is officially linked to Adithya Bandili's ID.
+
+#### Step 3: The Marking Engine (Backend)
+Mrs. Smith enters marks for Adithya: 
+*   Q1: 8/10 (Group A)
+*   Q2: 9/10 (Group A)
+*   Q3: 15/20 (Group B)
+*   Q4: 12/20 (Group B)
+The **Marking Engine** kicks in. It sees "Answer 2 of 4". It calculates that Q2 (9) + Q3 (15) = 24 is better than Q1 (8) + Q4 (12) = 20. It calculates the final grade using `Decimal` math and saves it to the database.
+
+#### Step 4: The Audit Log (Database)
+Mrs. Smith realizes she typed Q1 wrong. She changes it from an 8 to a 9. 
+The database silently fires a **Postgres Trigger**. It writes a new row in the `mark_changes` table: *"Teacher ID 5 changed Q1 for Adithya from 8 to 9 at 2:45 PM."* This log is now locked. No one can delete it.
+
+#### Step 5: The Publish (Teacher)
+Mrs. Smith finishes all 30 students. She clicks the big green **"Publish Results"** button.
+The database updates the `status` column for all these scripts from `'Pending'` to `'Published'`.
+
+#### Step 6: The Student Portal (Safe Access)
+Adithya Bandili logs in on his phone. The Student Portal requests `GET /results/me`. 
+FastAPI verifies his JWT, sees he is a Student, and asks the database for his marks. The database checks RLS: *"Is the token email == Adithya's email? Yes. Is the status 'Published'? Yes."* Adithya sees his grades.
+
+#### Step 7: The Attack (Blocked)
+Aditya Singh (the other Aditya) logs in. He wants to see how he did compared to his rival, Adithya. He opens Chrome DevTools and changes the API request from `/results/me` to `/results/adithya_bandili`.
+FastAPI sends the request to the database. The database checks RLS: *"The token says 'Aditya Singh', but the requested data belongs to 'Adithya Bandili'. REJECT."* Aditya gets a `403 Forbidden` and sees nothing.
+
+---
+
+### 🗺️ The Flowchart
+
+*(You can paste this directly into your GitHub Markdown files).*
+
+```mermaid
+flowchart TD
+    %% Actors
+    Teacher([👩‍🏫 Mrs. Smith])
+    Student([🧑‍🎓 Adithya])
+    Hacker([💀 Aditya - Hacker])
+
+    %% Flow 1: Upload & Match
+    Teacher -->|1. Upload Scans| FE_T[Teacher Dashboard]
+    FE_T -->|Upload PDF| Storage[(Supabase Storage)]
+    FE_T -->|Trigger Match| BE_Fuzzy[FastAPI: Fuzzy Matcher]
+    BE_Fuzzy -->|Reads 'B-Aditya'<br/>Suggests: 'Adithya Bandili'| FE_T
+    Teacher -->|2. Approve Match| FE_T
+
+    %% Flow 2: Math & Audit
+    Teacher -->|3. Enter Marks| FE_T
+    FE_T -->|POST /marks| BE_Math[FastAPI: Marking Engine]
+    BE_Math -->|Calc Best 2 of 4<br/>Decimal Rounding| DB[(PostgreSQL)]
+    DB -.->|Postgres Trigger| Audit[(Immutable Audit Log)]
+    
+    %% Flow 3: Publish
+    Teacher -->|4. Click Publish| FE_T
+    FE_T -->|UPDATE status = 'Published'| DB
+
+    %% Flow 4: Student Access
+    Student -->|5. Log In| FE_S[Student Portal]
+    FE_S -->|GET /results/me| BE_Auth[FastAPI: JWT Verify]
+    BE_Auth -->|Fetch Data| RLS{Database RLS}
+    RLS -->|"Check: auth.uid() == student_id\nAND status == 'Published'"| DB
+    DB -->|Return Own Marks| FE_S
+
+    %% Flow 5: Hacker Attack
+    Hacker -->|6. Change URL to /results/adithya| FE_S
+    FE_S -->|GET /results/adithya| BE_Auth
+    BE_Auth -->|Fetch Data| RLS
+    RLS -->|"Check FAILS:\nHacker ID != Adithya ID"| Block[(Blocked: 0 Rows Returned)]
+    Block -->|403 Forbidden| FE_S
+
+    %% Styling
+    classDef teacher fill:#3498db,color:#fff,stroke:#2980b9,stroke-width:2px;
+    classDef student fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:2px;
+    classDef hacker fill:#e74c3c,color:#fff,stroke:#c0392b,stroke-width:2px;
+    classDef db fill:#9b59b6,color:#fff,stroke:#8e44ad,stroke-width:2px;
+    
+    class Teacher teacher;
+    class Student student;
+    class Hacker hacker;
+    class DB,Audit,Storage db;
+```
