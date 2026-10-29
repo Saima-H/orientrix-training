@@ -1179,7 +1179,78 @@ If you try to save a base64-encoded image of a scanned paper directly into a Pos
 *   **Supabase Storage** = The **Filing Cabinet** (stores the heavy PDFs and images).
 
   # LET'S START BUILDING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Got it. Here is **Step 1** in the exact format you requested: Pre-requisites, Step Summary, Architecture Tracker, and then the exact Process to execute.
+# i have a question so basically results vault is a feature branch so whenever i open the terminal for root, frontend, backend i shld first go to this branch or not required?
+This is a fantastic question. It shows you are really thinking about how version control fits into your daily workflow.
+
+The short answer is: **No, you do not need to switch branches in every terminal.** 
+
+Here is exactly how Git branches work in practice:
+
+### 🪄 The "Parallel Universe" Concept
+A Git branch is not tied to a specific folder (like `frontend` or `backend`). A branch is a **parallel universe for your entire project**. 
+
+When you run `git checkout -b results-vault` in the **root** folder, Git instantly changes the files in `frontend/`, `backend/`, and the root folder all at the same time. 
+
+Because all your terminals are reading from the exact same physical folder on your hard drive, they all see the same branch.
+
+### 🖥️ How to handle your terminals:
+1. **Root Terminal:** This is the only place you should run `git` commands (like `git add`, `git commit`, `git checkout`).
+2. **Backend Terminal:** If you are running `uvicorn main:app`, you don't care about the branch. You are just running the code currently on your disk. 
+3. **Frontend Terminal:** Same thing, `npm run dev` just runs the code currently on your disk.
+
+---
+
+### ⚠️ One Important Clarification about our current setup:
+Right now, you are actually working on the `main` branch. We didn't create the `results-vault` branch earlier because I wanted to keep things simple, and since this is a personal assignment, building directly on `main` is totally fine.
+
+However, if you *want* to follow best practices, here is what you do:
+1. Go to your **root** terminal.
+2. Run: `git checkout -b results-vault`
+3. From now on, all your commits will go to the `results-vault` branch. 
+4. When you want to push, run: `git push -u origin results-vault`
+
+If you do this, your `main` branch stays safe with the Idea Vault code. 
+
+**What is your current branch?** If you type `git branch` in your root terminal, it will show an asterisk `*` next to the branch you are currently on. 
+
+# so when i close the terminal and open it again by default i will be in main and i would have to go to results-vault ryt ?
+**No, bro, you will NOT be on `main` by default.**
+
+This is one of the magical things about Git that confuses a lot of people. 
+
+When you close the terminal and open it again, **Git remembers exactly which branch you were on.** 
+
+### Why?
+Git stores your current branch in a hidden file inside the `.git` folder. As long as you are working in the same `idea-vault` folder on your computer, Git will keep you on the `results-vault` branch until you explicitly tell it to switch back.
+
+### How to verify this:
+Next time you open your terminal, run this command:
+```bash
+git branch
+```
+You will see a list of branches, and there will be an asterisk `*` next to `results-vault`:
+```text
+  backup-before-hack
+  main
+* results-vault
+```
+
+### When *would* you go back to `main`?
+You only go back to `main` if you run this command:
+```bash
+git checkout main
+```
+
+### The only catch:
+If you open a *brand new* terminal but forget to `cd` into your `idea-vault` folder (for example, if you open the terminal in your `C:\Users\samh7` folder), running `git branch` will throw an error because that folder isn't a Git repository. But as long as you `cd` back into `idea-vault`, Git will remember you are on `results-vault`.
+
+So, you are safe! You stay on `results-vault` automatically. 
+
+
+   
+   
+   
+   **Step 1** 
 
 ---
 
@@ -1259,6 +1330,35 @@ flowchart TD
 **Action 1: Create the Migration File**
 1. Open your `idea-vault` folder in VS Code.
 2. Create a new folder called **`migrations`** (at the root level).
+
+
+   Since you are on Windows (using PowerShell), you have two easy ways to create a folder.
+
+### Option 1: Using the Terminal (Command Line)
+
+1. Make sure you are in the **root** folder of your project:
+   ```bash
+   cd C:\Users\samh7\idea-vault
+   ```
+2. Type this exact command and press Enter:
+   ```bash
+   mkdir migrations
+   ```
+   *(or `md migrations` — they both do the exact same thing).*
+
+**To verify it worked**, type `dir` and press Enter. You should see the `migrations` folder in the list.
+
+---
+
+### Option 2: Using VS Code (Easier)
+Since you will need to create a file inside it anyway, the easiest way is directly in VS Code:
+1. Open your `idea-vault` folder in VS Code.
+2. Look at the left sidebar (the file explorer).
+3. Right-click in the empty space below your folders.
+4. Click **New Folder**.
+5. Name it `migrations` and press Enter.
+
+
 3. Inside the `migrations` folder, create a file named **`001_create_results_tables.sql`**.
 4. Paste this exact SQL code into it and **save**:
 
