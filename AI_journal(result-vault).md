@@ -1139,3 +1139,41 @@ flowchart TD
 1.  **Explicit Authentication:** You can clearly see the `Supabase Auth` node at the top. Both the Teacher and the Student get their JWT from the same place.
 2.  **FastAPI RBAC:** I added the `FastAPI RBAC` node to *both* the Teacher and Student flows. You can see that before the Teacher can access the `Marking Engine`, they must pass the `FastAPI RBAC` check. This prevents a Student from hitting the `/marks` endpoint.
 3.  **Hacker flow makes sense:** The Hacker gets a valid JWT from Supabase (as a Student), so they pass the FastAPI RBAC check (because they *are* a student), but they are stopped at the Database RLS level because they are requesting someone else's ID.
+
+# why use both supabase storage and postgresql db???
+This is a **great question**. It seems confusing because they both have the word "Supabase" and "Storage" associated with them, but they serve two completely different purposes. 
+
+To put it simply: **They store different types of data.** You cannot put a 5MB scanned PDF image into a PostgreSQL database. It will crash the database or make it incredibly slow.
+
+Here is the exact difference:
+
+### 1. PostgreSQL Database (The Relational Data)
+*   **What it stores:** Text, numbers, dates, and relationships. (e.g., `Student_ID = 5`, `Name = Adithya`, `Math_Mark = 90`, `Roll_Number = 3`).
+*   **Analogy:** A highly organized **Excel spreadsheet** or a library catalog. It is fast, searchable, and structured.
+*   **In our app:** This holds all the tables we just created (`students`, `papers`, `questions`, `marks`, `audit_logs`). 
+
+### 2. Supabase Storage (The Object/File Storage)
+*   **What it stores:** Heavy, unstructured files. (e.g., Scanned PDFs of the exam, JPG images of handwritten papers, profile pictures).
+*   **Analogy:** A giant **filing cabinet** or a Google Drive. It just holds the physical files.
+*   **In our app:** When the teacher uploads 30 scanned exam papers, the actual PDF files go here. 
+
+---
+
+### How they work together in the flowchart
+Look at the flowchart steps:
+1.  The Teacher uploads a scan (Step 4).
+2.  The actual PDF file goes into **Supabase Storage**.
+3.  Supabase Storage gives back a **URL link** (e.g., `https://supabase.co/storage/v1/object/public/scans/paper_5.pdf`).
+4.  FastAPI takes that URL link and saves it as a simple text string inside the **PostgreSQL Database** (e.g., in the `answer_scripts` table, there is a column called `file_url`).
+
+When the teacher or student wants to view the paper later, the database says: *"I don't have the picture, but here is the link."* The browser then uses that link to fetch the actual image from Supabase Storage.
+
+### Why not just use one?
+If you try to save a base64-encoded image of a scanned paper directly into a PostgreSQL `TEXT` column:
+*   The database will become gigabytes in size just for one class.
+*   Every time you run a simple query like `SELECT name FROM students`, the database will slow down because it's dragging around massive image files.
+*   It costs way more money in database hosting.
+
+### Summary
+*   **PostgreSQL Database** = The **Brain** (stores the numbers, names, and marks).
+*   **Supabase Storage** = The **Filing Cabinet** (stores the heavy PDFs and images).
