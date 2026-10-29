@@ -1359,6 +1359,12 @@ Since you will need to create a file inside it anyway, the easiest way is direct
 5. Name it `migrations` and press Enter.
 
 
+
+
+
+
+now folder is created continue 
+
 3. Inside the `migrations` folder, create a file named **`001_create_results_tables.sql`**.
 4. Paste this exact SQL code into it and **save**:
 
