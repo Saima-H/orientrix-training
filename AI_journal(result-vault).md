@@ -1082,21 +1082,26 @@ flowchart TD
         Storage[("Supabase Storage")]:::storage
 
         JWT -->|"3. Passes JWT to"| T_FE
-        T_FE -->|"4. Upload Scans"| Storage
+        Teacher -->|"4. Upload Scans"| T_FE
+        T_FE -->|"5. Saves PDFs"| Storage
         
-        Teacher -->|"5. Approves Match"| T_FE
         T_FE -->|"6. Triggers Match + JWT"| T_RBAC
         T_RBAC -->|"7. Authorized"| FuzzyMatcher
         FuzzyMatcher -->|"8. Suggest Name+Roll"| T_FE
         
-        Teacher -->|"9. Enters Marks"| T_FE
-        T_FE -->|"10. POST /marks + JWT"| T_RBAC
-        T_RBAC -->|"11. Authorized"| MathEngine
-        MathEngine -->|"12. Saves Marks"| DB
-        DB -.->|"13. Trigger on Update"| AuditLog
+        Teacher -->|"9. Approves Match"| T_FE
+        T_FE -->|"10. Save Link + JWT"| T_RBAC
+        T_RBAC -->|"11. Saves Script Link"| DB
         
-        Teacher -->|"14. Clicks Publish"| T_FE
-        T_FE -->|"15. UPDATE status='Published'"| DB
+        Teacher -->|"12. Enters Marks"| T_FE
+        T_FE -->|"13. POST /marks + JWT"| T_RBAC
+        T_RBAC -->|"14. Authorized"| MathEngine
+        MathEngine -->|"15. Saves Marks"| DB
+        DB -.->|"16. Trigger on Update"| AuditLog
+        
+        Teacher -->|"17. Clicks Publish"| T_FE
+        T_FE -->|"18. PATCH /publish + JWT"| T_RBAC
+        T_RBAC -->|"19. Authorized"| DB
     end
 
     %% 2. STUDENT SUCCESS PATH
@@ -1105,14 +1110,14 @@ flowchart TD
         S_RBAC{"FastAPI RBAC<br/>(Check role == Student)"}:::be
         S_RLS{"Database RLS"}:::db
         
-        JWT -->|"3. Passes JWT to"| S_FE
-        Student -->|"4. Logs In"| S_FE
-        S_FE -->|"5. GET /results/me + JWT"| S_RBAC
-        S_RBAC -->|"6. Authorized"| S_RLS
-        S_RLS -->|"7. Check: auth.uid() == student_id AND status == Published"| DB
-        DB -->|"8. Returns Adithya's Marks"| S_RBAC
-        S_RBAC -->|"9. JSON Response"| S_FE
-        S_FE -->|"10. Renders Results"| Student
+        JWT -->|"20. Passes JWT to"| S_FE
+        Student -->|"21. Logs In"| S_FE
+        S_FE -->|"22. GET /results/me + JWT"| S_RBAC
+        S_RBAC -->|"23. Authorized"| S_RLS
+        S_RLS -->|"24. Check: auth.uid() == student_id AND status == Published"| DB
+        DB -->|"25. Returns Adithya's Marks"| S_RBAC
+        S_RBAC -->|"26. JSON Response"| S_FE
+        S_FE -->|"27. Renders Results"| Student
     end
 
     %% 3. HACKER ATTACK PATH
@@ -1120,13 +1125,13 @@ flowchart TD
         H_RLS{"Database RLS"}:::db
         Block["🚫 403 Forbidden"]:::block
         
-        Hacker -->|"11. Changes URL to /results/adithya"| S_FE
-        S_FE -->|"12. GET /results/adithya + JWT"| S_RBAC
-        S_RBAC -->|"13. Authorized (Role is Student)"| H_RLS
-        H_RLS -->|"14. Check FAILS: Hacker ID != Adithya ID"| Block
-        Block -->|"15. Returns 0 Rows"| S_RBAC
-        S_RBAC -->|"16. Error Message"| S_FE
-        S_FE -->|"17. Access Denied"| Hacker
+        Hacker -->|"28. Changes URL to /results/adithya"| S_FE
+        S_FE -->|"29. GET /results/adithya + JWT"| S_RBAC
+        S_RBAC -->|"30. Authorized (Role is Student)"| H_RLS
+        H_RLS -->|"31. Check FAILS: Hacker ID != Adithya ID"| Block
+        Block -->|"32. Returns 0 Rows"| S_RBAC
+        S_RBAC -->|"33. Error Message"| S_FE
+        S_FE -->|"34. Access Denied"| Hacker
     end
 ```
 
