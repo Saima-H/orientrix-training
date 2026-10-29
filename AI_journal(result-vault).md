@@ -1515,3 +1515,7 @@ Using a tool is just the first step. Here are the critical practices for a produ
 
 *   **For a real production app with 10,000 users**: You would **absolutely use a tool like Alembic or the Supabase CLI**. The manual SQL Editor would be forbidden for schema changes. This automated, version-controlled workflow is what separates a hobby project from a robust, professional application.
 
+  # for now lets continue with writing code directly into sql editor we later improv
+  <img width="1279" height="593" alt="image" src="https://github.com/user-attachments/assets/f14a6fcd-57f4-4603-9a8b-a1e3f25095f0" />
+
+
