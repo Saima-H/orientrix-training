@@ -1705,6 +1705,108 @@ python seed_data.py
 3. Paste it and click **Run**.
 *(Go to Table Editor -> `students`. You should see 30 students!)*
 
+<img width="1277" height="622" alt="image" src="https://github.com/user-attachments/assets/667b85be-b11c-4bf8-986e-d467530cca08" />
+<img width="1277" height="588" alt="image" src="https://github.com/user-attachments/assets/b47ab3f9-c45c-46be-a021-724e9bc8b876" />
+<img width="635" height="298" alt="image" src="https://github.com/user-attachments/assets/d6cc4aff-fee6-4684-8847-b3907f495e99" />
+<img width="1269" height="597" alt="image" src="https://github.com/user-attachments/assets/2f363958-9882-4c98-9b1e-508a12c280f5" />
+<img width="1271" height="591" alt="image" src="https://github.com/user-attachments/assets/fdf9f397-52ff-4490-80e3-dec77c199ddc" />
+
+
+# DATABASE SCHEMA 
+Here is the visual breakdown of your Results Vault database. 
+
+I have created an **Entity-Relationship Diagram (ERD)**. This is a standard diagram used by database administrators to visualize how tables connect. 
+
+You can copy the Mermaid code below into your `README.md` or `RESULTS-VAULT.md` on GitHub.
+
+### 📊 The Database Schema (ERD)
+
+```mermaid
+erDiagram
+    STUDENTS ||--o{ ANSWER_SCRIPTS : "Submits"
+    PAPERS ||--o{ ANSWER_SCRIPTS : "Has"
+    PAPERS ||--o{ QUESTIONS : "Contains"
+    ANSWER_SCRIPTS ||--o{ QUESTION_MARKS : "Receives"
+    QUESTIONS ||--o{ QUESTION_MARKS : "Awards"
+
+    STUDENTS {
+        int id PK
+        string name
+        int roll_number
+        string class
+        string section
+        string admission_number "UNIQUE"
+    }
+
+    PAPERS {
+        int id PK
+        string name
+        int total_max_marks
+    }
+
+    QUESTIONS {
+        int id PK
+        int paper_id FK
+        int question_number
+        decimal max_marks
+        string choice_group "e.g., Group A"
+    }
+
+    ANSWER_SCRIPTS {
+        int id PK
+        int paper_id FK
+        int student_id FK
+        string status "Pending/Graded/Published"
+    }
+
+    QUESTION_MARKS {
+        int id PK
+        int script_id FK
+        int question_id FK
+        decimal marks_obtained
+        boolean is_best_choice
+    }
+```
+
+---
+
+### 🧠 What is important to visualize here?
+
+Here is the breakdown of what you are looking at, and why it matters.
+
+#### 1. The Primary Keys (PK)
+Every table has an `id` column with a "PK" next to it. 
+*   This is the unique fingerprint for that specific row. 
+*   *Why it matters:* If there are two students named "Aditya", their `id` (e.g., 4 and 5) is how the database tells them apart.
+
+#### 2. The Foreign Keys (FK)
+These are the arrows connecting the tables. They are the "glue" of a relational database.
+*   `paper_id` in the `QUESTIONS` table is an FK pointing to the `PAPERS` table. This means a question *belongs* to a specific paper.
+*   `student_id` in the `ANSWER_SCRIPTS` table is an FK pointing to `STUDENTS`. This is how we know who wrote the script.
+
+#### 3. The "Aditya Trap" Constraint (Crucial!)
+Look at the `STUDENTS` table. There is a hidden rule attached to it called a **Composite Unique Constraint**.
+*   The rule is: `UNIQUE(class, section, roll_number)`.
+*   *Why it matters:* This physically prevents the database from saving two students with Roll Number 3 in Class 10-A. However, Roll Number 3 in Class 10-B is perfectly fine. The database enforces the business logic.
+
+#### 4. The `status` Column in `ANSWER_SCRIPTS`
+Look at `ANSWER_SCRIPTS`. It has a `status` column (Pending, Graded, Published).
+*   *Why it matters:* This is the "Master Switch" for the Student Portal. Even if a student's marks are saved in `QUESTION_MARKS`, the RLS policy will block the student from reading them until the teacher flips this `status` to `"Published"`.
+
+#### 5. The `is_best_choice` Column in `QUESTION_MARKS`
+Look at `QUESTION_MARKS`. It has a boolean `is_best_choice`.
+*   *Why it matters:* This solves the "Answer 2 of 4" problem. When the Marking Engine calculates the total, it will look at the 4 questions the student answered, find the 2 highest scores, and flag them as `TRUE`. The total is only calculated using the rows where this is `TRUE`.
+
+#### 6. The Triple-Split (Why so many tables?)
+Notice how to get a student's final mark, you have to go through a journey: `STUDENTS` -> `ANSWER_SCRIPTS` -> `QUESTION_MARKS` -> `QUESTIONS` -> `PAPERS`.
+*   *Why it matters:* This is called **Normalization**. We don't repeat the student's name or the paper's name on every single mark. This saves massive amounts of storage space and prevents data corruption. If a student changes their name, you only update it in one place (`STUDENTS`), not in 100 different mark rows.
+
+Let me know when you've pasted this into your GitHub and executed the Seed Data (`INSERT` statements) in Supabase! Then we move to **Step 3: The Marking Engine**.
+
+
+
+
+# CONTINUE STEP 2
 **Action 3: Create the Queries File**
 1. In VS Code, create a file called `results_queries.sql` inside your `migrations` folder.
 2. Paste these 10 queries into it and save:
