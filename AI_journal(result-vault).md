@@ -1768,7 +1768,6 @@ erDiagram
     }
 ```
 
----
 
 ### 🧠 What is important to visualize here?
 
