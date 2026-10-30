@@ -1888,6 +1888,208 @@ git add .
 git commit -m "Step 2: Generated seed data and wrote 10 advanced SQL queries"
 git push
 ```
+# Adding migration pipeline
+Here is the complete, corrected **Step 2.5**. 
 
+I have included the full, zoomed-out architecture diagram so you can see exactly where Alembic fits into the system.
 
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+Before doing this, you need to understand these tools:
+*   **Alembic:** The industry-standard database migration tool for Python/SQLAlchemy. It acts as "Git for your database."
+*   **`models.py`:** The Python file where you define your database tables using SQLAlchemy classes.
+*   **`alembic revision --autogenerate`:** A command that looks at your `models.py`, compares it to the live database, and automatically writes the SQL migration script.
+*   **`alembic upgrade head`:** The command that actually runs the migration and creates the tables in your database.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+Since the Tech Lead wants a proper migration pipeline, we are going to **delete the tables you created manually** and let Alembic recreate them. This ensures your Python code is the single source of truth for your database schema.
+
+1. Drop the 5 tables in Supabase.
+2. Install Alembic.
+3. Write the 5 tables as Python classes in `models.py`.
+4. Configure Alembic.
+5. Generate and run the migration.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+Here is the full architecture. Look at the **Backend** block. You are currently building the green boxes: `models.py` and `Alembic`. Alembic sits between your Python code and the database to build the schema automatically.
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        Engine["Marking Engine"]
+        Matcher["Fuzzy Matcher"]
+        
+        Models["SQLAlchemy Models<br/>(models.py)"]:::highlight
+        Alembic["Alembic<br/>(Migration Pipeline)"]:::highlight
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Scripts<br/>(PDFs)")]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(DB Firewall)"}
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Alembic fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    style Models fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    
+    Models -->|"1. Defines Schema"| Alembic
+    Alembic -->|"2. Builds Tables"| Relational
+
+    %% Existing Flows
+    T_Dash -->|Upload| Storage
+    T_Dash -->|Input Marks| RBAC
+    S_Dash -->|View Results| RBAC
+    
+    RBAC --> Engine
+    RBAC --> Matcher
+    
+    Engine -->|SQL| RLS
+    Matcher -->|SQL| RLS
+    
+    RLS --> Relational
+    Relational -.->|Trigger| Audit
+    RLS --> Audit
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Drop the manually created tables**
+1. Go to Supabase -> **SQL Editor**.
+2. Run this SQL to wipe the manual tables so Alembic can take over:
+```sql
+DROP TABLE IF EXISTS question_marks CASCADE;
+DROP TABLE IF EXISTS answer_scripts CASCADE;
+DROP TABLE IF EXISTS questions CASCADE;
+DROP TABLE IF EXISTS papers CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+```
+
+**Action 2: Install Alembic**
+In your backend terminal (with `venv` active), run:
+```bash
+pip install alembic
+```
+
+**Action 3: Create the SQLAlchemy Models**
+1. In your `backend` folder, create a file called **`models.py`**.
+2. Paste this code (note: `class` is a reserved word in Python, so we map it using `class_name`):
+
+```python
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint, Boolean
+from sqlalchemy.orm import relationship
+from database import Base
+
+class Student(Base):
+    __tablename__ = "students"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    roll_number = Column(Integer, nullable=False)
+    class_name = Column("class", String(50), nullable=False) # 'class' is reserved in Python
+    section = Column(String(10), nullable=False)
+    admission_number = Column(String(50), unique=True, nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('class', 'section', 'roll_number', name='unique_roll_per_section'),
+    )
+    scripts = relationship("AnswerScript", back_populates="student")
+
+class Paper(Base):
+    __tablename__ = "papers"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    total_max_marks = Column(Integer, nullable=False)
+    questions = relationship("Question", back_populates="paper")
+    scripts = relationship("AnswerScript", back_populates="paper")
+
+class Question(Base):
+    __tablename__ = "questions"
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    question_number = Column(Integer, nullable=False)
+    max_marks = Column(Numeric(5, 2), nullable=False)
+    choice_group = Column(String(50), nullable=True)
+    paper = relationship("Paper", back_populates="questions")
+    marks = relationship("QuestionMark", back_populates="question")
+
+class AnswerScript(Base):
+    __tablename__ = "answer_scripts"
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(50), default="Pending")
+    paper = relationship("Paper", back_populates="scripts")
+    student = relationship("Student", back_populates="scripts")
+    marks = relationship("QuestionMark", back_populates="script")
+
+class QuestionMark(Base):
+    __tablename__ = "question_marks"
+    id = Column(Integer, primary_key=True, index=True)
+    script_id = Column(Integer, ForeignKey("answer_scripts.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
+    marks_obtained = Column(Numeric(5, 2), nullable=False)
+    is_best_choice = Column(Boolean, default=False)
+    script = relationship("AnswerScript", back_populates="marks")
+    question = relationship("Question", back_populates="marks")
+```
+
+**Action 4: Initialize Alembic**
+In your `backend` terminal, run:
+```bash
+alembic init alembic
+```
+*This creates an `alembic` folder and an `alembic.ini` file.*
+
+**Action 5: Connect Alembic to `.env` and `models.py`**
+1. Open `alembic/env.py`.
+2. Find the line `target_metadata = None` and change it to:
+```python
+from database import Base
+import models
+target_metadata = Base.metadata
+```
+3. Scroll down to the `run_migrations_online()` function. Find where it says `config.get_main_option("sqlalchemy.url")` and replace that line with:
+```python
+from dotenv import load_dotenv
+import os
+load_dotenv()
+connectable = create_engine(os.getenv("DATABASE_URL"))
+```
+
+**Action 6: Generate and Run the Migration**
+In your terminal:
+```bash
+# 1. Generate the migration file (Autogenerate reads models.py and writes the SQL)
+alembic revision --autogenerate -m "Create results vault tables"
+
+# 2. Apply the migration to Supabase
+alembic upgrade head
+```
+
+If you go to your Supabase Table Editor, you will see the 5 tables recreated—this time, created by Alembic.
+
+**Action 7: Commit and Push**
+```bash
+git add .
+git commit -m "Step 2.5: Implemented Alembic migration pipeline"
+git push
+```
 
