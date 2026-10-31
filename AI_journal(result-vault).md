@@ -2272,4 +2272,8 @@ But with a seed script (`python seed_data.py`), you can just run it again and ag
 
 You were right to ask this. Many junior developers accidentally put `INSERT` statements into their production migrations and ruin the live database. By separating them, you are now writing enterprise-grade code. 
 
+Development, Staging, and Production are different worlds. You now understand that a migration goes to all worlds, but seeding only stays in the development world. 
+
+
+
 
