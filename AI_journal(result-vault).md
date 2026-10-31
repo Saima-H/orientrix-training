@@ -2092,4 +2092,35 @@ git add .
 git commit -m "Step 2.5: Implemented Alembic migration pipeline"
 git push
 ```
+### What does `CASCADE` mean?
+
+In SQL, **`CASCADE`** means **"The Domino Effect."**
+
+If you delete a parent row, `CASCADE` automatically deletes all the child rows that are linked to it. 
+
+### The Real-World Example in Your App
+Look at your `ForeignKey` setups. Imagine you have:
+*   **Student #1 (Adithya)**
+*   **Answer Script #55** (which belongs to Adithya)
+*   **Question Marks** (which belong to Script #55)
+
+If the school principal decides to delete Adithya from the system (`DELETE FROM students WHERE id = 1`), what happens to his answer scripts and marks?
+
+*   **Without `CASCADE` (The Default):** The database will throw an error and say, *"You can't delete Adithya! He still has answer scripts linked to him."* You would have to manually delete the marks first, then the script, then the student.
+*   **With `ON DELETE CASCADE`:** The database automatically says, *"You deleted Adithya. So I will also delete his Answer Script #55, and I will also delete all the marks inside Script #55."* It cascades down the chain like dominoes.
+
+### Why is this useful?
+It prevents **"Orphan Data."** 
+If you delete a student but leave their answer scripts in the database, those scripts are now "orphans"—they have a `student_id` that points to a student who doesn't exist. This corrupts your database.
+
+### The Code
+In your `models.py`, you wrote this:
+```python
+student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+```
+This tells Postgres: *"If the student is deleted, delete this script too."*
+
+*(Note: There is also `ON UPDATE CASCADE`, which means if a Primary Key changes, the Foreign Key updates automatically. But since we use `SERIAL` IDs that never change, `ON DELETE CASCADE` is the most important one).*
+
+
 
