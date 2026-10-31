@@ -3051,6 +3051,8 @@ You should now see **`30 passed`**.
 *(This is the beauty of Test-Driven Development. You wrote the tests first, they failed, you fixed the logic, and now the code is bulletproof.)*
 
 Let me know when you see `30 passed` and the report shows `Wrongly Linked: 0`!
+<img width="1279" height="627" alt="image" src="https://github.com/user-attachments/assets/36607367-220f-483c-80df-650e01f03b12" />
+
 
 **Action 4: Commit to GitHub**
 ```bash
@@ -3059,6 +3061,243 @@ git commit -m "Step 4: Built Fuzzy Matcher with Two-Factor logic and 30 test cas
 git push
 ```
 
-Let me know when you see the `30 passed` and the report showing `0` wrongly linked! Then we move to **Step 5: Immutable Audit Logs (Postgres Triggers)**.
+# step 5
+
+Here is the complete, start-to-finish guide for **Step 5: Immutable Audit Logs (Postgres Triggers)**. 
+
+As we discussed, we are going to use **Alembic** to run the raw SQL for the trigger, ensuring your entire database structure is version-controlled in your repository. 
+
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+*   **Audit Log:** A table that records every change. If a mark changes from 80 to 90, it logs *who* did it, *when*, the *old* value, and the *new* value.
+*   **Postgres Trigger:** A piece of code that runs automatically inside the database when a specific event (like an `UPDATE`) happens.
+*   **Immutability:** Once a row is in the audit log, no one—not even the database admin—can edit or delete it. We enforce this by revoking `UPDATE` and `DELETE` permissions.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+1.  Update `models.py` to include the new `MarkChange` table.
+2.  Generate a blank Alembic migration.
+3.  Write the raw SQL for the trigger inside the Alembic migration file.
+4.  Apply the migration.
+5.  Test the trigger manually in Supabase.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+We are currently building the **Audit Logs** (highlighted in bright green).
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        Engine["Marking Engine"]
+        Matcher["Fuzzy Matcher"]
+        Models["SQLAlchemy Models"]
+        Alembic["Alembic Migrations"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Scripts")]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security"}
+        Relational[("Relational Tables")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]:::highlight
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Audit fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    Audit -- "👉 WE ARE HERE (Step 5) 👈" --> Audit
+
+    %% Existing Flows
+    T_Dash -->|Upload| Images
+    T_Dash -->|Input Marks| RBAC
+    S_Dash -->|View Results| RBAC
+    RBAC --> Engine
+    RBAC --> Matcher
+    Engine -->|SQL| RLS
+    Matcher -->|SQL| RLS
+    RLS --> Relational
+    Relational -.->|Trigger on Update| Audit
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Replace `backend/models.py`**
+Open `backend/models.py` and replace everything with this complete code (this includes all your previous tables plus the new `MarkChange` table):
+
+```python
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint, Boolean, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from database import Base
+
+class Student(Base):
+    __tablename__ = "students"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    roll_number = Column(Integer, nullable=False)
+    class_name = Column("class", String(50), nullable=False)
+    section = Column(String(10), nullable=False)
+    admission_number = Column(String(50), unique=True, nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('class', 'section', 'roll_number', name='unique_roll_per_section'),
+    )
+    scripts = relationship("AnswerScript", back_populates="student")
+
+class Paper(Base):
+    __tablename__ = "papers"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    total_max_marks = Column(Integer, nullable=False)
+    questions = relationship("Question", back_populates="paper")
+    scripts = relationship("AnswerScript", back_populates="paper")
+
+class Question(Base):
+    __tablename__ = "questions"
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    question_number = Column(Integer, nullable=False)
+    max_marks = Column(Numeric(5, 2), nullable=False)
+    choice_group = Column(String(50), nullable=True)
+    paper = relationship("Paper", back_populates="questions")
+    marks = relationship("QuestionMark", back_populates="question")
+
+class AnswerScript(Base):
+    __tablename__ = "answer_scripts"
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(50), default="Pending")
+    paper = relationship("Paper", back_populates="scripts")
+    student = relationship("Student", back_populates="scripts")
+    marks = relationship("QuestionMark", back_populates="script")
+
+class QuestionMark(Base):
+    __tablename__ = "question_marks"
+    id = Column(Integer, primary_key=True, index=True)
+    script_id = Column(Integer, ForeignKey("answer_scripts.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
+    marks_obtained = Column(Numeric(5, 2), nullable=False)
+    is_best_choice = Column(Boolean, default=False)
+    script = relationship("AnswerScript", back_populates="marks")
+    question = relationship("Question", back_populates="marks")
+
+# --- NEW AUDIT LOG TABLE ---
+class MarkChange(Base):
+    __tablename__ = "mark_changes"
+    id = Column(Integer, primary_key=True, index=True)
+    question_mark_id = Column(Integer, nullable=False)
+    old_marks = Column(Numeric(5, 2), nullable=False)
+    new_marks = Column(Numeric(5, 2), nullable=False)
+    changed_by = Column(String(255), nullable=False)
+    changed_at = Column(DateTime, server_default=func.now())
+```
+
+**Action 2: Generate a Blank Alembic Migration**
+In your backend terminal (`venv` active), run:
+```bash
+alembic revision -m "add_audit_log_trigger"
+```
+Alembic will generate a file and print the path (e.g., `alembic/versions/xxxx_add_audit_log_trigger.py`). 
+
+**Action 3: Edit the Migration File**
+Open that newly generated file. Delete everything in it and paste this code. 
+*(Note: Make sure you copy the `revision` and `down_revision` IDs from the top of your generated file and paste them into the variables below).*
+
+```python
+"""add_audit_log_trigger
+
+Revision ID: your_revision_id_here
+Revises: your_previous_revision_id_here
+Create Date: 2026-10-31
+
+"""
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision = 'your_revision_id_here'
+down_revision = 'your_previous_revision_id_here'
+branch_labels = None
+depends_on = None
+
+def upgrade():
+    # 1. Create the Trigger Function
+    op.execute("""
+        CREATE OR REPLACE FUNCTION log_mark_change()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF OLD.marks_obtained IS DISTINCT FROM NEW.marks_obtained THEN
+                INSERT INTO mark_changes (
+                    question_mark_id, 
+                    old_marks, 
+                    new_marks, 
+                    changed_by
+                ) VALUES (
+                    OLD.id, 
+                    OLD.marks_obtained, 
+                    NEW.marks_obtained, 
+                    COALESCE(current_setting('app.current_user', true), 'System_Teacher')
+                );
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
+
+    # 2. Attach the Trigger to the question_marks table
+    op.execute("""
+        DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;
+        CREATE TRIGGER trigger_log_mark_change
+        AFTER UPDATE ON question_marks
+        FOR EACH ROW
+        EXECUTE FUNCTION log_mark_change();
+    """)
+
+    # 3. Make the Audit Table IMMUTABLE
+    op.execute("""
+        REVOKE UPDATE, DELETE ON mark_changes FROM PUBLIC;
+        REVOKE UPDATE, DELETE ON mark_changes FROM postgres;
+    """)
+
+def downgrade():
+    # If we ever roll back this migration, clean up everything
+    op.execute("DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;")
+    op.execute("DROP FUNCTION IF EXISTS log_mark_change();")
+    op.execute("GRANT UPDATE, DELETE ON mark_changes TO PUBLIC;")
+    op.execute("GRANT UPDATE, DELETE ON mark_changes TO postgres;")
+```
+
+**Action 4: Apply the Migration**
+Run this in your backend terminal:
+```bash
+alembic upgrade head
+```
+
+**Action 5: Test the Trigger (The Magic Moment)**
+1. Go to Supabase -> **Table Editor** -> `question_marks`.
+2. Change the `marks_obtained` for any row from whatever it is to `19.0`.
+3. Go to the `mark_changes` table. You should see a brand new row logging the old mark, the new mark, and `System_Teacher`!
+4. Now, try to delete or edit that row in `mark_changes`. Supabase will throw an error: `permission denied for table mark_changes`. This proves it is immutable!
+
+**Action 6: Commit to GitHub**
+```bash
+cd ..
+git add .
+git commit -m "Step 5: Added Immutable Audit Logs via Alembic migration"
+git push
+```
 
 
