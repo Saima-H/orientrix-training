@@ -2491,6 +2491,121 @@ pytest test_marking_engine.py -v
 ```
 You should see **33 passed** (30 parametrized + 2 exceptions + 1 property test).
 
+<img width="1265" height="638" alt="image" src="https://github.com/user-attachments/assets/3c012769-a84b-4b30-abe3-77a14ff6a554" />
+
+# why did 10 test cases fail and the fix
+
+The tests that failed are all the ones with decimal marks (like 2.2, 2.7, 2.25, 10.75).
+
+The problem is how Python's Decimal module works. When you wrote:
+
+python
+total = total.quantize(Decimal("0.5"), rounding=ROUND_HALF_UP)
+You probably thought it means "round to the nearest 0.5".
+
+But it actually means: "Round to 1 decimal place" (because 0.5 has one decimal place).
+
+So 2.2 stayed 2.2 (it didn't round to 2.0).
+
+2.25 became 2.3 (it rounded to one decimal place, not to the nearest half).
+
+Here is the exact explanation of why the bug happened, an example, and the complete corrected code.
+
+### 🐛 Why the original code failed
+In Python's `Decimal` module, the `quantize()` function doesn't round to the nearest "step" (like 0.5). It rounds to a specific **number of decimal places**.
+
+When you wrote `Decimal("0.5")`, Python looked at it and said: *"Ah, this number has one decimal place. So I will round your total to one decimal place."*
+
+**Example of the Bug:**
+*   Your total was `2.25`.
+*   You asked it to round to one decimal place (`0.5` format).
+*   It rounded `2.25` to `2.3`. (But `2.3` is not a multiple of `0.5`! The nearest multiples of 0.5 are `2.0` and `2.5`).
+
+### 🛠️ Why the Fix works
+To force Python to round to the nearest `0.5`, we use a simple math trick:
+1.  **Multiply by 2:** `2.25 * 2 = 4.5`.
+2.  **Round to the nearest whole number:** `4.5` becomes `5`.
+3.  **Divide by 2:** `5 / 2 = 2.5`. 
+
+This gives us the exact nearest 0.5 step!
+
+Let's look at another example:
+*   `2.7 * 2 = 5.4` -> rounds to `5` -> `5 / 2 = 2.5`. (Correct!)
+*   `2.8 * 2 = 5.6` -> rounds to `6` -> `6 / 2 = 3.0`. (Correct!)
+
+---
+
+### 📄 Complete Code for `marking_engine.py`
+
+Here is the final, fully corrected file. Copy and paste this entirely into your `backend/marking_engine.py`:
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+def calculate_total(paper_max_marks: float, questions: list, grace_marks: float = 0.0) -> Decimal:
+    """
+    Calculates the final total for a student's paper.
+    
+    `questions` is a list of dictionaries like:
+    [
+        {"question_id": 1, "marks_obtained": 8, "max_marks": 10, "choice_group": "Group A"},
+        {"question_id": 2, "marks_obtained": 9, "max_marks": 10, "choice_group": "Group A"},
+        {"question_id": 3, "marks_obtained": 15, "max_marks": 20, "choice_group": "Group B"},
+        {"question_id": 4, "marks_obtained": 12, "max_marks": 20, "choice_group": "Group B"},
+    ]
+    """
+    
+    # 1. Convert paper max marks to Decimal
+    paper_max = Decimal(str(paper_max_marks))
+    
+    # 2. Validate marks (cannot be below 0 or above max)
+    for q in questions:
+        if q["marks_obtained"] < 0:
+            raise ValueError(f"Mark for question {q['question_id']} cannot be negative.")
+        if q["marks_obtained"] > q["max_marks"]:
+            raise ValueError(f"Mark for question {q['question_id']} exceeds the maximum of {q['max_marks']}.")
+            
+    # 3. Handle Choice Groups ("Answer 2 of 4")
+    groups = {}
+    compulsory_questions = []
+    
+    for q in questions:
+        if q.get("choice_group"):
+            group_name = q["choice_group"]
+            if group_name not in groups:
+                groups[group_name] = []
+            groups[group_name].append(q)
+        else:
+            compulsory_questions.append(q)
+            
+    # Calculate total for compulsory questions
+    total = sum(Decimal(str(q["marks_obtained"])) for q in compulsory_questions)
+    
+    # For each choice group, sort by raw marks descending and pick the top 2
+    for group_name, group_questions in groups.items():
+        group_questions.sort(key=lambda x: x["marks_obtained"], reverse=True)
+        best_2 = group_questions[:2]
+        total += sum(Decimal(str(q["marks_obtained"])) for q in best_2)
+        
+    # 4. Add Grace Marks
+    total += Decimal(str(grace_marks))
+    
+    # 5. Round to nearest 0.5, never down (The Fix)
+    # Multiply by 2, round to nearest whole number, then divide by 2
+    total = total * Decimal("2")
+    total = total.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    total = total / Decimal("2")
+    
+    # 6. Cap at paper max marks and 0
+    if total > paper_max:
+        total = paper_max
+    if total < 0:
+        total = Decimal("0.0")
+        
+    return total
+```
+
+
 **Action 5: Commit to GitHub**
 ```bash
 git add .
