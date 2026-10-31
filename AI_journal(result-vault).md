@@ -2233,6 +2233,10 @@ It will print out what it's doing and insert everything directly into Supabase. 
 
 *(If you go to Supabase Table Editor, you will see all 30 students and their marks).*
 
+<img width="937" height="232" alt="image" src="https://github.com/user-attachments/assets/3790ec22-8fdc-4d98-a4e8-e90837ecda64" />
+
+<img width="1279" height="630" alt="image" src="https://github.com/user-attachments/assets/ae0592ac-ac2e-423e-b47c-2523caee5861" />
+
 # but if alembic actually inserts 30 fake students whats the issue like, seeding is same ryt im unable to get the difference, seeding is also generating 30 fake students
 
 You are asking a brilliant question, and you are technically correct: **running a `INSERT` statement in an Alembic migration file does the exact same thing as running it in a seed script.** They both just put data into the database.
@@ -2273,6 +2277,226 @@ But with a seed script (`python seed_data.py`), you can just run it again and ag
 You were right to ask this. Many junior developers accidentally put `INSERT` statements into their production migrations and ruin the live database. By separating them, you are now writing enterprise-grade code. 
 
 Development, Staging, and Production are different worlds. You now understand that a migration goes to all worlds, but seeding only stays in the development world. 
+
+# step 3
+Here is the complete, corrected guide for **Step 3: The Marking Engine**, including the full architecture diagram. 
+
+You can copy this entire message into your notes.
+
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+Before writing the code, here are the three concepts you need to know:
+*   **`Decimal` module:** Python's built-in module for accurate base-10 math. You must use this instead of `float` because `float` causes binary errors (e.g., `0.1 + 0.2 = 0.30000000000000004`), which will cost students marks.
+*   **`ROUND_HALF_UP`:** Python's built-in `round()` uses "Banker's Rounding" (rounds `.5` to the nearest *even* number). We must use `ROUND_HALF_UP` from the `decimal` module to ensure a student always gets the extra mark (e.g., 2.5 becomes 3.0).
+*   **`@pytest.mark.parametrize`:** A Pytest decorator that lets you run the same test function 30 times with different inputs.
+*   **`hypothesis` library:** A property-based testing tool. Instead of giving it specific numbers, you tell it: *"Generate 100 random papers, and assert the total is always between 0 and the max."* It tries to break your code with weird inputs.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+1.  Install `hypothesis`.
+2.  Create `marking_engine.py` in your `backend` folder.
+3.  Write the `calculate_total()` function using `Decimal` math.
+4.  Create `test_marking_engine.py`.
+5.  Write 30 test cases using `@pytest.mark.parametrize`, plus 2 exception tests, plus 1 property test using `hypothesis`.
+6.  Run the tests and commit.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+Here is the full architecture. We are currently building the **Marking Engine** inside the FastAPI backend (highlighted in bright green). 
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"JWT Verification +<br/>Role Check (RBAC)"}
+        
+        Engine["Marking Engine<br/>(Decimal Math, Best 2 of 4)"]:::highlight
+        
+        Matcher["Fuzzy Matcher"]
+        Models["SQLAlchemy Models"]
+        Alembic["Alembic Migrations"]
+    end
+
+    subgraph Storage ["Supabase Storage"]
+        Images[("Scanned Scripts<br/>(PDFs)")]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(DB Firewall)"}
+        Relational[("Relational Tables<br/>(Students, Papers, Questions, Marks)")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Engine fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    Engine -- "👉 WE ARE HERE (Step 3) 👈" --> Engine
+
+    %% Existing Flows
+    T_Dash -->|Upload| Images
+    T_Dash -->|Input Marks| RBAC
+    S_Dash -->|View Results| RBAC
+    
+    RBAC -->|Teacher Authorized| Engine
+    RBAC -->|Teacher Authorized| Matcher
+    
+    Engine -->|Calculates Total| RLS
+    Matcher -->|Matches Names| RLS
+    
+    Models -.->|Defines Schema| Alembic
+    Alembic -.->|Builds Tables| Relational
+    
+    RLS --> Relational
+    Relational -.->|Trigger on Update| Audit
+    RLS --> Audit
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Install Hypothesis**
+In your backend terminal (with `venv` active):
+```bash
+pip install hypothesis
+```
+
+**Action 2: Create `marking_engine.py`**
+In your `backend` folder, create `marking_engine.py` and paste this code:
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+def calculate_total(paper_max_marks: float, questions: list, grace_marks: float = 0.0) -> Decimal:
+    paper_max = Decimal(str(paper_max_marks))
+    
+    for q in questions:
+        if q["marks_obtained"] < 0:
+            raise ValueError(f"Mark for question {q['question_id']} cannot be negative.")
+        if q["marks_obtained"] > q["max_marks"]:
+            raise ValueError(f"Mark for question {q['question_id']} exceeds the maximum of {q['max_marks']}.")
+            
+    groups = {}
+    compulsory_questions = []
+    
+    for q in questions:
+        if q.get("choice_group"):
+            group_name = q["choice_group"]
+            if group_name not in groups:
+                groups[group_name] = []
+            groups[group_name].append(q)
+        else:
+            compulsory_questions.append(q)
+            
+    total = sum(Decimal(str(q["marks_obtained"])) for q in compulsory_questions)
+    
+    for group_name, group_questions in groups.items():
+        group_questions.sort(key=lambda x: x["marks_obtained"], reverse=True)
+        best_2 = group_questions[:2]
+        total += sum(Decimal(str(q["marks_obtained"])) for q in best_2)
+        
+    total += Decimal(str(grace_marks))
+    total = total.quantize(Decimal("0.5"), rounding=ROUND_HALF_UP)
+    
+    if total > paper_max:
+        total = paper_max
+    if total < 0:
+        total = Decimal("0.0")
+        
+    return total
+```
+
+**Action 3: Create the Tests**
+In your `backend` folder, create `test_marking_engine.py` and paste this entire code block:
+
+```python
+import pytest
+from decimal import Decimal
+from marking_engine import calculate_total
+from hypothesis import given, strategies as st
+
+# --- 30 PARAMETRIZED TEST CASES ---
+@pytest.mark.parametrize("paper_max, questions, grace, expected", [
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 10, "choice_group": None}], 0, Decimal("10.0")),
+    (100, [{"question_id": 1, "marks_obtained": 0, "max_marks": 10, "choice_group": None}], 0, Decimal("0.0")),
+    (100, [{"question_id": 1, "marks_obtained": 15, "max_marks": 20, "choice_group": None}, {"question_id": 2, "marks_obtained": 25, "max_marks": 30, "choice_group": None}], 0, Decimal("40.0")),
+    (100, [{"question_id": 1, "marks_obtained": 100, "max_marks": 100, "choice_group": None}], 0, Decimal("100.0")),
+    (100, [{"question_id": 1, "marks_obtained": 2.2, "max_marks": 10, "choice_group": None}], 0, Decimal("2.0")),
+    (100, [{"question_id": 1, "marks_obtained": 2.3, "max_marks": 10, "choice_group": None}], 0, Decimal("2.5")),
+    (100, [{"question_id": 1, "marks_obtained": 2.7, "max_marks": 10, "choice_group": None}], 0, Decimal("2.5")),
+    (100, [{"question_id": 1, "marks_obtained": 2.8, "max_marks": 10, "choice_group": None}], 0, Decimal("3.0")),
+    (100, [{"question_id": 1, "marks_obtained": 2.25, "max_marks": 10, "choice_group": None}], 0, Decimal("2.5")),
+    (100, [{"question_id": 1, "marks_obtained": 10.75, "max_marks": 20, "choice_group": None}], 0, Decimal("11.0")),
+    (100, [{"question_id": 1, "marks_obtained": 50, "max_marks": 100, "choice_group": None}], 5, Decimal("55.0")),
+    (100, [{"question_id": 1, "marks_obtained": 95, "max_marks": 100, "choice_group": None}], 10, Decimal("100.0")),
+    (100, [{"question_id": 1, "marks_obtained": 5, "max_marks": 10, "choice_group": None}], -10, Decimal("0.0")),
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 10, "choice_group": None}], 2.25, Decimal("12.5")),
+    (100, [{"question_id": 1, "marks_obtained": 9, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 8, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 3, "marks_obtained": 5, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 4, "marks_obtained": 2, "max_marks": 10, "choice_group": "Group A"}], 0, Decimal("17.0")),
+    (100, [{"question_id": 1, "marks_obtained": 8, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group A"}, {"question_id": 3, "marks_obtained": 9, "max_marks": 20, "choice_group": "Group A"}], 0, Decimal("19.0")),
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group A"}, {"question_id": 3, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group A"}], 0, Decimal("20.0")),
+    (100, [{"question_id": 1, "marks_obtained": 15, "max_marks": 20, "choice_group": "Group A"}], 0, Decimal("15.0")),
+    (100, [{"question_id": 1, "marks_obtained": 12, "max_marks": 20, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 18, "max_marks": 20, "choice_group": "Group A"}], 0, Decimal("30.0")),
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 9, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 3, "marks_obtained": 8, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 4, "marks_obtained": 20, "max_marks": 20, "choice_group": "Group B"}, {"question_id": 5, "marks_obtained": 19, "max_marks": 20, "choice_group": "Group B"}, {"question_id": 6, "marks_obtained": 18, "max_marks": 20, "choice_group": "Group B"}], 0, Decimal("58.0")),
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 10, "choice_group": None}, {"question_id": 2, "marks_obtained": 9, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 3, "marks_obtained": 8, "max_marks": 10, "choice_group": "Group A"}, {"question_id": 4, "marks_obtained": 7, "max_marks": 10, "choice_group": "Group A"}], 0, Decimal("27.0")),
+    (100, [{"question_id": 1, "marks_obtained": 0, "max_marks": 0, "choice_group": None}], 0, Decimal("0.0")),
+    (100, [], 0, Decimal("0.0")),
+    (100, [], 5, Decimal("5.0")),
+    (1000, [{"question_id": 1, "marks_obtained": 500, "max_marks": 500, "choice_group": None}], 0, Decimal("500.0")),
+    (100, [{"question_id": 1, "marks_obtained": 5, "max_marks": 10, "choice_group": "Group A"}], -10, Decimal("0.0")),
+    (100, [{"question_id": 1, "marks_obtained": 10.25, "max_marks": 20, "choice_group": "Group A"}], 0, Decimal("10.5")),
+    (100, [{"question_id": 1, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group A"}, {"question_id": 2, "marks_obtained": 10, "max_marks": 20, "choice_group": "Group B"}], 5.25, Decimal("25.5")),
+    (100, [{"question_id": 1, "marks_obtained": 0, "max_marks": 10, "choice_group": None}], 2, Decimal("2.0")),
+    (100, [{"question_id": 1, "marks_obtained": 2.1, "max_marks": 10, "choice_group": None}], 0, Decimal("2.0")),
+])
+def test_calculate_total(paper_max, questions, grace, expected):
+    result = calculate_total(paper_max, questions, grace)
+    assert result == expected
+
+# --- 2 ERROR TEST CASES ---
+def test_negative_mark_raises_error():
+    with pytest.raises(ValueError, match="cannot be negative"):
+        calculate_total(100, [{"question_id": 1, "marks_obtained": -1, "max_marks": 10, "choice_group": None}])
+
+def test_mark_exceeds_max_raises_error():
+    with pytest.raises(ValueError, match="exceeds the maximum"):
+        calculate_total(100, [{"question_id": 1, "marks_obtained": 11, "max_marks": 10, "choice_group": None}])
+
+# --- 1 PROPERTY TEST (HYPOTHESIS) ---
+@given(
+    paper_max=st.integers(min_value=10, max_value=1000),
+    marks_obtained=st.floats(min_value=0, max_value=1000),
+    max_marks=st.floats(min_value=0, max_value=1000),
+    grace=st.floats(min_value=-10, max_value=10)
+)
+def test_property_total_is_between_0_and_max(paper_max, marks_obtained, max_marks, grace):
+    if marks_obtained > max_marks:
+        marks_obtained = max_marks
+    questions = [{"question_id": 1, "marks_obtained": marks_obtained, "max_marks": max_marks, "choice_group": None}]
+    result = calculate_total(paper_max, questions, grace)
+    assert result >= Decimal("0.0")
+    assert result <= Decimal(str(paper_max))
+```
+
+**Action 4: Run the Tests**
+In your terminal:
+```bash
+pytest test_marking_engine.py -v
+```
+You should see **33 passed** (30 parametrized + 2 exceptions + 1 property test).
+
+**Action 5: Commit to GitHub**
+```bash
+git add .
+git commit -m "Step 3: Built Marking Engine with 30 test cases and Hypothesis property test"
+git push
+```
 
 
 
