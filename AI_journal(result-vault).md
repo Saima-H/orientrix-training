@@ -2714,6 +2714,40 @@ In enterprise software, we use a blend of both because they cover each other's b
 1.  **Example Tests (Parametrize):** These are your **Contracts**. They document exactly what the business expects. If a new developer accidentally changes the math, the example tests scream: *"Wait, 2.25 is supposed to be 2.5, but you just changed it to 2.0!"*
 2.  **Property Tests (Hypothesis):** These are your **Safety Nets**. They throw millions of random, chaotic inputs at your code to ensure it never crashes, never goes negative, and never exceeds the maximum bounds.
 
+    # can we write many property tests
+**Yes, it is 100% possible to write many property tests.** But writing *only* property tests is a bad idea. 
+
+Here is the straight answer on what is possible, what is impossible, and what is recommended.
+
+### 1. Is it possible? 
+**Yes.** You could write 50 property tests for different rules (e.g., "Marks are never negative", "Grace marks never decrease the score", "The order of questions doesn't change the total"). 
+
+### 2. Is it impossible?
+No, it's not impossible, but property tests are **hard to write** for complex business logic. 
+*   *Example:* How do you write a property test for a "Fuzzy Matcher"? It's very hard. It's much easier to write an example test: *"If the name is 'B-Aditya' and the roll is 3, it MUST link to Adithya Bandili."*
+
+### 3. What is recommended? (The Industry Standard)
+The recommended approach is **1 to 3 Property Tests per core function, combined with Example Tests.**
+
+Here is the golden rule of testing:
+*   **Use Example Tests (Parametrize)** to verify **Business Logic**. (e.g., "Does 2.25 round to 2.5?").
+*   **Use Property Tests (Hypothesis)** to verify **Universal Invariants**. 
+
+Here are the 3 specific properties that are recommended for this app:
+1.  **Bounds:** The final mark is *always* between 0 and the paper max. (You already wrote this).
+2.  **Idempotency:** If you run the calculation twice on the same data, the result is exactly the same.
+3.  **Commutativity:** If you shuffle the order of the questions in the array, the final total does not change. (The math shouldn't care if Q1 is processed before Q2).
+
+### Why you shouldn't write *only* property tests:
+If you rely only on property tests, you might miss a specific bug. 
+For example: A property test checks that the total is between 0 and 100. But it doesn't know that the number *must be a multiple of 0.5*. 
+
+### Summary
+Write **1 to 3 property tests** to guarantee the mathematical rules of the universe (bounds, order, consistency). Write **30 to 50 example tests** to guarantee the specific business rules (2.25 rounds to 2.5). 
+
+This combination gives you a bulletproof safety net.
+# STEP 4
+
 Here is the complete, final guide for **Step 4: The Fuzzy Matcher**, including all 30 test cases. 
 
 ---
