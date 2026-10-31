@@ -3299,5 +3299,32 @@ git add .
 git commit -m "Step 5: Added Immutable Audit Logs via Alembic migration"
 git push
 ```
+# Instead of adding the trigger why don't we disable update and delete of logs using fast api
+First thing is Fast Api has disabled even then direct connection to db can give access to the user to change the marks ,also, if FastApi is bypassed we have no log of the change but with trigger an automatic log is created when someone changes something
+# I thought Fast API could do so many things but 
+I get exactly why you feel that way. It’s a very common "engineering realization" moment.
+
+Here is the truth: **You are blaming FastAPI for something it was never designed to do.**
+
+### The Misconception
+You thought FastAPI was the "everything tool"—the gatekeeper, the security guard, and the database protector. Now you realize it has limits.
+
+### The Reality
+FastAPI is just the **messenger** (the API layer). Its job is to receive HTTP requests, validate data (using Pydantic), and talk to the database. It is *not* a database security system. 
+
+**The Analogy:**
+*   **FastAPI** is the **Receptionist** at the front desk. They check your ID and tell you where to go.
+*   **PostgreSQL (Supabase)** is the **Bank Vault** in the back.
+
+If a thief drills through the wall to get into the vault, you don't blame the receptionist. The receptionist did their job at the front door. The vault itself needs its own steel locks (Triggers, RLS).
+
+### Why FastAPI is still amazing:
+FastAPI is still one of the best backend frameworks in the world. It is incredibly fast, it automatically generates Swagger documentation, and it validates data beautifully with Pydantic. 
+
+But it cannot replace the database. You *need* both:
+*   **FastAPI** for the application logic (calculating marks, fuzzy matching, handling requests).
+*   **PostgreSQL** for the infrastructure security (Triggers for logs, RLS for row-level access).
+
+You just leveled up from a beginner (who thinks the framework does everything) to an engineer (who understands that security must exist at every layer). FastAPI is still a 10/10 tool; you just learned what its actual job is.
 
 
