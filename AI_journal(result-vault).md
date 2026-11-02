@@ -3345,6 +3345,7 @@ Save the file. Then go back to your terminal (still in the `backend` folder) and
 ```bash
 alembic upgrade head
 ```
+# error resolution
 
 Ah, this is the exact same trap you hit earlier! It means you are in the **wrong folder** in your terminal. 
 
@@ -3565,6 +3566,105 @@ Run this in your backend terminal:
 ```bash
 alembic upgrade head
 ```
+# error resolution
+**I see exactly what happened, and it's 100% my fault.** 
+
+Look at the error: `relation "mark_changes" does not exist`. 
+
+I gave you the code for the Trigger, but I forgot to tell you to actually **create the `mark_changes` table first**! The migration tried to run the `REVOKE` commands on a table that hasn't been built yet.
+
+Here is how to fix it in 2 minutes.
+
+### Step 1: Delete the broken migration file
+1. In VS Code, go to `backend/alembic/versions/`.
+2. Delete the file `8e0a5374a9e3_add_audit_log_trigger.py`.
+*(We are going to generate it again properly).*
+
+### Step 2: Create the Table via Autogenerate
+Since you already added the `MarkChange` class to `models.py`, Alembic knows the table is missing. Run this in your terminal:
+```bash
+alembic revision --autogenerate -m "create_mark_changes_table"
+```
+*(Notice the `--autogenerate` flag. This will create a file that actually builds the table).*
+
+Now, apply it to the database:
+```bash
+alembic upgrade head
+```
+*(Go to Supabase Table Editor and verify that the `mark_changes` table now exists).*
+
+### Step 3: Now Create the Trigger Migration
+Now that the table exists, we can add the trigger. Run:
+```bash
+alembic revision -m "add_audit_log_trigger"
+```
+
+Open the *newly generated* file. Delete everything inside it and paste the trigger code I gave you earlier. 
+
+**But wait!** You need to grab the `revision` and `down_revision` IDs from this new file. Look at the top of the file, copy the IDs, and paste them into the variables at the top of the code block.
+
+```python
+"""add_audit_log_trigger
+
+Revision ID: [YOUR NEW REVISION ID]
+Revises: [YOUR NEW DOWN_REVISION ID]
+Create Date: 2026-11-02
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+revision = '[YOUR NEW REVISION ID]'
+down_revision = '[YOUR NEW DOWN_REVISION ID]'
+branch_labels = None
+depends_on = None
+
+def upgrade() -> None:
+    op.execute("""
+        CREATE OR REPLACE FUNCTION log_mark_change()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF OLD.marks_obtained IS DISTINCT FROM NEW.marks_obtained THEN
+                INSERT INTO mark_changes (
+                    question_mark_id, old_marks, new_marks, changed_by
+                ) VALUES (
+                    OLD.id, OLD.marks_obtained, NEW.marks_obtained, 
+                    COALESCE(current_setting('app.current_user', true), 'System_Teacher')
+                );
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
+
+    op.execute("""
+        DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;
+        CREATE TRIGGER trigger_log_mark_change
+        AFTER UPDATE ON question_marks
+        FOR EACH ROW
+        EXECUTE FUNCTION log_mark_change();
+    """)
+
+    op.execute("""
+        REVOKE UPDATE, DELETE ON mark_changes FROM PUBLIC;
+        REVOKE UPDATE, DELETE ON mark_changes FROM postgres;
+    """)
+
+def downgrade() -> None:
+    op.execute("DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;")
+    op.execute("DROP FUNCTION IF EXISTS log_mark_change();")
+```
+
+### Step 4: Apply the Trigger
+Save the file, and run:
+```bash
+alembic upgrade head
+```
+It should succeed this time because the table now exists! 
+
+Let me know when it says `Running upgrade...` without errors.
+
+
 
 **Action 5: Test the Trigger (The Magic Moment)**
 1. Go to Supabase -> **Table Editor** -> `question_marks`.
