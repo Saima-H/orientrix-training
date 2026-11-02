@@ -3883,6 +3883,67 @@ Let's simplify this. Here are the exact policies you need to create:
 *   Name: `Allow read access to all authenticated users`
 *   USING: `true` (Anyone logged in can read the student list).
 
+  <img width="571" height="595" alt="image" src="https://github.com/user-attachments/assets/244349c7-c39b-4e1b-8a85-e3a3498eb65c" />
+# but now all students can see each others marks -major problem students table doesnt have email id so we have to create tht now
+**You are 100% correct.** 
+
+This is a **massive security hole**. If we use that policy, Student A logs in, sees all Published scripts, and can read Student B's marks. 
+
+I gave you a bad shortcut. The issue is that your `students` table **does not have an `email` column**, so the database has no way to match the logged-in user to the correct student row.
+
+To fix this properly, we need to add an `email` column to the `students` table. Here is exactly how to do it:
+
+### Step 1: Update `models.py`
+Open `backend/models.py`. Find the `Student` class and add the `email` column:
+
+```python
+class Student(Base):
+    __tablename__ = "students"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=True) # <-- ADD THIS
+    roll_number = Column(Integer, nullable=False)
+    class_name = Column("class", String(50), nullable=False)
+    section = Column(String(10), nullable=False)
+    admission_number = Column(String(50), unique=True, nullable=False)
+```
+
+### Step 2: Run Alembic Migration
+In your terminal (inside `backend`):
+```bash
+alembic revision --autogenerate -m "add_email_to_students"
+alembic upgrade head
+```
+
+### Step 3: Update the RLS Policy on `answer_scripts`
+1. Go back to Supabase -> **Authentication** -> **Policies**.
+2. Find the `answer_scripts` policy you just created and **Delete** it.
+3. Create a new policy -> **For full customization**.
+4. **Name:** `Students see only own published scripts`
+5. **Command:** `SELECT`
+6. **USING expression:** Paste this exact code:
+
+```sql
+(
+  auth.jwt() ->> 'email' = (SELECT email FROM students WHERE students.id = answer_scripts.student_id)
+  AND status = 'Published'
+)
+OR
+auth.jwt() ->> 'email' = 'teacher@test.com'
+```
+
+*(This means: "If the logged-in user's email matches the email of the student who owns this script, AND the script is published, then show it. OR, if the logged-in user is the teacher, show it.")*
+
+### Step 4: Populate the emails (Optional but necessary for testing)
+Since you added a new column, the emails are currently `NULL`. You need to update the students to have emails.
+Run this in the Supabase SQL Editor:
+```sql
+UPDATE students SET email = 'student@test.com' WHERE id = 1;
+UPDATE students SET email = 'student2@test.com' WHERE id = 2;
+-- Add emails for the rest as needed.
+```
+
+
 **Policy 2: `answer_scripts` table**
 *   Operation: `SELECT`
 *   Name: `Students see only published scripts, Teachers see all`
