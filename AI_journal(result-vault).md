@@ -3672,6 +3672,86 @@ Let me know when it says `Running upgrade...` without errors.
 3. Go to the `mark_changes` table. You should see a brand new row logging the old mark, the new mark, and `System_Teacher`!
 4. Now, try to delete or edit that row in `mark_changes`. Supabase will throw an error: `permission denied for table mark_changes`. This proves it is immutable!
 
+INITIAL MARKS:
+   <img width="1273" height="634" alt="image" src="https://github.com/user-attachments/assets/be23c0c6-d497-41f6-a941-09c82bc1327a" />
+   AFTER CHANGE:
+   <img width="1275" height="594" alt="image" src="https://github.com/user-attachments/assets/d5f4e482-0ece-4095-a91e-5e1b9d4cb89d" />
+# IDEALLY I SHOULD HAVE GOTTEN AN ERROR BUT 
+<img width="1279" height="633" alt="image" src="https://github.com/user-attachments/assets/5d27aa02-45a1-40b4-b444-502dc21b26ee" />
+
+This is a brilliant catch. You are right to be frustrated. 
+
+The reason it got deleted is a very important database security detail: **The Supabase Table Editor uses the `postgres` "superuser" role.**
+
+In Postgres, a superuser can bypass any `REVOKE` command. It's like the owner of the bank being able to open the vault with their master key, even if there's a "Do Not Enter" sign. 
+
+To make the table truly immutable—meaning **no one, not even the database owner, can delete or update a row**—we need to use a **Database Trigger that throws an error**. 
+
+Let's fix this right now. This is the ultimate "security camera" that cannot be unplugged.
+
+### Step 1: Create a New Alembic Migration
+We need to add another migration to install the immutability trigger.
+
+In your terminal (inside `backend`, with `(venv)` active), run:
+```bash
+alembic revision -m "enforce_immutable_audit_logs"
+```
+
+### Step 2: Paste the Trigger Code
+1. Open the newly generated file in `backend/alembic/versions/`.
+2. **Do not touch the `revision` or `down_revision` IDs.**
+3. Replace the `def upgrade()` and `def downgrade()` functions with this code:
+
+```python
+def upgrade() -> None:
+    """Upgrade schema."""
+    # Create a function that prevents any modification or deletion of audit logs
+    op.execute("""
+        CREATE OR REPLACE FUNCTION prevent_audit_changes()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            RAISE EXCEPTION 'Audit logs are immutable. Modification or deletion is strictly forbidden.';
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
+
+    # Attach the trigger to mark_changes for UPDATE and DELETE
+    op.execute("""
+        DROP TRIGGER IF EXISTS trigger_prevent_audit_changes ON mark_changes;
+        CREATE TRIGGER trigger_prevent_audit_changes
+        BEFORE UPDATE OR DELETE ON mark_changes
+        FOR EACH ROW
+        EXECUTE FUNCTION prevent_audit_changes();
+    """)
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    op.execute("DROP TRIGGER IF EXISTS trigger_prevent_audit_changes ON mark_changes;")
+    op.execute("DROP FUNCTION IF EXISTS prevent_audit_changes();")
+```
+
+### Step 3: Apply the Migration
+Run this in your terminal:
+```bash
+alembic upgrade head
+```
+
+### Step 4: Test the True Immutability
+1. Go to **Supabase** -> **Table Editor** -> `mark_changes`.
+2. Try to delete a row.
+3. **This time, you will get a massive red error from the database:** `ERROR: Audit logs are immutable. Modification or deletion is strictly forbidden.`
+
+You have now built a system that satisfies the assignment's most critical requirement: *"Every mark change goes into a mark_changes table that refuses UPDATE and DELETE."*
+
+### Step 5: Commit to GitHub
+Once you see the error, go to your root folder and push:
+```bash
+cd ..
+git add .
+git commit -m "Step 5: Enforced true immutability for audit logs with Postgres triggers"
+git push
+```
+
 **Action 6: Commit to GitHub**
 ```bash
 cd ..
