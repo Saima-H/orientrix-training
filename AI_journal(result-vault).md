@@ -4075,7 +4075,13 @@ RESET ROLE;
 
 If your policy is correct, Step 3 will return **exactly 1 row** (Student 3). 
 
-Try this and let me know if you see only 1 row! Once you confirm RLS is actually blocking the other 29 students, you can commit Step 6 and we will move to the final step: Playwright Tests.
+<img width="1274" height="588" alt="image" src="https://github.com/user-attachments/assets/42b2e754-ffe6-48e2-9e37-03af033d94da" />
+
+
+
+
+
+
 **Policy 3: `mark_changes` table**
 *   Operation: `SELECT`
 *   Name: `Only teachers can view audit logs`
@@ -4089,6 +4095,110 @@ To truly test this, you need to bypass FastAPI and talk directly to the database
 2. Try to fetch data directly from the `answer_scripts` table.
 3. Because you are a student, RLS will automatically filter out any rows where `status != 'Published'`.
 
+   To do this, we need to write a tiny piece of code in your Next.js frontend that talks **directly** to Supabase, completely skipping FastAPI. 
+
+This is the ultimate test of your RLS policies. If RLS works, the Supabase database itself will filter the data based on who is logged in.
+
+Here is exactly how to do it in 3 steps:
+
+### Step 1: Create a Test Page in Next.js
+1. Open VS Code.
+2. Go to `frontend/app/`.
+3. Create a new folder called `test-rls`.
+4. Inside that folder, create a file called `page.tsx`.
+5. Paste this exact code:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function TestRLS() {
+  const [user, setUser] = useState<any>(null);
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // 1. Check who is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (!user) {
+        setError("You are not logged in. Please go to the login page first.");
+        return;
+      }
+
+      // 2. Fetch directly from the database (Bypassing FastAPI entirely!)
+      // The Supabase client automatically attaches the user's JWT to this request.
+      const { data, error } = await supabase.from("answer_scripts").select("*");
+      
+      if (error) {
+        setError(error.message);
+      } else {
+        setScripts(data || []);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return (
+    <div className="p-8 bg-gray-900 text-white min-h-screen">
+      <h1 className="text-2xl font-bold mb-4">RLS Direct Database Test</h1>
+      
+      <div className="mb-4 p-4 bg-gray-800 rounded">
+        <p><strong>Logged in as:</strong> {user?.email || "Not logged in"}</p>
+      </div>
+
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+
+      <h2 className="text-xl font-bold mb-2">Answer Scripts returned from DB: {scripts.length}</h2>
+      
+      <div className="space-y-2">
+        {scripts.map((script) => (
+          <div key={script.id} className="p-3 bg-gray-800 rounded border border-gray-700">
+            <p>Script ID: {script.id}</p>
+            <p>Student ID: {script.student_id}</p>
+            <p>Status: {script.status}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Step 2: Make sure you have data to test
+For this to work, you need to have some `answer_scripts` that are `Published` and some that are `Pending`. 
+
+Go to your Supabase SQL Editor and run this to update some statuses:
+```sql
+-- Make the first 5 published, leave the rest pending
+UPDATE answer_scripts SET status = 'Published' WHERE id <= 5;
+```
+
+### Step 3: Run the Test
+1. Make sure your frontend is running (`npm run dev`).
+2. Go to your login page (`http://localhost:3000`) and log in as `student1@test.com` (or whichever email you assigned).
+3. Now, manually type this URL in your browser: **`http://localhost:3000/test-rls`**
+4. Look at the screen and open your browser console (F12).
+
+**What should happen:**
+*   If you are logged in as **Student 1**, RLS should say: *"Only show scripts where the student's email matches `student1@test.com` AND status is Published."* You should see **0 or 1** script.
+*   If you log out and log in as the **Teacher** (`teacher@test.com`), and go to `/test-rls`, you should see **all 30** scripts (both Published and Pending).
+
+### Why this is the ultimate proof:
+FastAPI is not running in this scenario (or at least, it's completely bypassed). The browser is talking straight to Supabase using the public Anon Key + the User's JWT. The only thing protecting the data is the RLS policies you wrote. 
+
+Let me know what numbers you see when you are logged in as a Student vs. a Teacher!
+
 **Action 4: Commit to GitHub**
 Go to your root `idea-vault` folder:
 ```bash
@@ -4097,6 +4207,6 @@ git commit -m "Step 6: Implemented Row Level Security policies in Supabase"
 git push
 ```
 
-Let me know when you have enabled RLS and created the policies! Then we move to **Step 7: Playwright E2E Tests**.
+# Step 7
 
 
