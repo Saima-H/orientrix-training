@@ -3346,6 +3346,42 @@ Save the file. Then go back to your terminal (still in the `backend` folder) and
 alembic upgrade head
 ```
 
+Ah, this is the exact same trap you hit earlier! It means you are in the **wrong folder** in your terminal. 
+
+Alembic is looking for its configuration file (`alembic.ini`), but it can't find it because you are either inside the `alembic` folder or the root folder.
+
+### The Fix:
+
+**Step 1: Check where you are**
+Look at your terminal prompt. If it says something like:
+`PS C:\Users\samh7\idea-vault\backend\alembic>` 
+or 
+`PS C:\Users\samh7\idea-vault>`
+
+You are in the wrong place.
+
+**Step 2: Go to the `backend` folder**
+Run this command:
+```bash
+cd C:\Users\samh7\idea-vault\backend
+```
+*(Your prompt should end exactly with `\backend>`)*
+
+**Step 3: Verify `alembic.ini` is there**
+Run:
+```bash
+dir
+```
+You should see `alembic.ini` in the list of files. 
+
+**Step 4: Run the command again**
+Now run:
+```bash
+alembic revision -m "add_audit_log_trigger"
+```
+
+It should work perfectly this time. Let me know if you see the new file generated!
+
 ### Step 5: Test the Trigger (The Final Boss)
 If the terminal says `Running upgrade...` with no errors, it worked!
 
