@@ -3247,6 +3247,116 @@ alembic revision -m "add_audit_log_trigger"
 ```
 Alembic will generate a file and print the path (e.g., `alembic/versions/xxxx_add_audit_log_trigger.py`). 
 
+
+little bit of simplification as to what needs to be done
+
+Take a deep breath. You are right to pause here. This is the trickiest part of Alembic because we are hand-writing a migration instead of using `--autogenerate`. 
+
+Here is exactly where the file is and what to do, step-by-step.
+
+### Step 1: Create the Migration File
+Open your terminal in the **`backend`** folder (`venv` active). Run this command:
+```bash
+alembic revision -m "add_audit_log_trigger"
+```
+
+**Look at the terminal output.** It will say something like:
+> `Generating C:\Users\samh7\idea-vault\backend\alembic\versions\a1b2c3d4e5f6_add_audit_log_trigger.py`
+
+That is where your new file is! It is inside `backend/alembic/versions/`. 
+
+### Step 2: Open the File and Get the IDs
+1. In VS Code, navigate to `backend/alembic/versions/`.
+2. Click on the new file (it will start with a random string like `a1b2c3d4e5f6_...`).
+3. Look at the top of the file. You will see two variables already filled in for you:
+```python
+revision = 'a1b2c3d4e5f6'  # (Your actual ID will be different)
+down_revision = '9x8y7z6w5v' # (Your actual ID will be different)
+```
+
+### Step 3: Paste the Code (And fix the IDs)
+Delete everything inside that file and paste this code. **You MUST replace the placeholders with the actual IDs from your file.**
+
+```python
+"""add_audit_log_trigger
+
+Revision ID: a1b2c3d4e5f6  <-- PUT YOUR ACTUAL REVISION ID HERE
+Revises: 9x8y7z6w5v        <-- PUT YOUR ACTUAL DOWN_REVISION ID HERE
+Create Date: 2026-10-31
+
+"""
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision = 'a1b2c3d4e5f6'  # <-- PUT YOUR ACTUAL REVISION ID HERE
+down_revision = '9x8y7z6w5v' # <-- PUT YOUR ACTUAL DOWN_REVISION ID HERE
+branch_labels = None
+depends_on = None
+
+def upgrade():
+    # 1. Create the Trigger Function
+    op.execute("""
+        CREATE OR REPLACE FUNCTION log_mark_change()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF OLD.marks_obtained IS DISTINCT FROM NEW.marks_obtained THEN
+                INSERT INTO mark_changes (
+                    question_mark_id, 
+                    old_marks, 
+                    new_marks, 
+                    changed_by
+                ) VALUES (
+                    OLD.id, 
+                    OLD.marks_obtained, 
+                    NEW.marks_obtained, 
+                    COALESCE(current_setting('app.current_user', true), 'System_Teacher')
+                );
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """)
+
+    # 2. Attach the Trigger to the question_marks table
+    op.execute("""
+        DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;
+        CREATE TRIGGER trigger_log_mark_change
+        AFTER UPDATE ON question_marks
+        FOR EACH ROW
+        EXECUTE FUNCTION log_mark_change();
+    """)
+
+    # 3. Make the Audit Table IMMUTABLE
+    op.execute("""
+        REVOKE UPDATE, DELETE ON mark_changes FROM PUBLIC;
+        REVOKE UPDATE, DELETE ON mark_changes FROM postgres;
+    """)
+
+def downgrade():
+    # If we ever roll back this migration, clean up everything
+    op.execute("DROP TRIGGER IF EXISTS trigger_log_mark_change ON question_marks;")
+    op.execute("DROP FUNCTION IF EXISTS log_mark_change();")
+    op.execute("GRANT UPDATE, DELETE ON mark_changes TO PUBLIC;")
+    op.execute("GRANT UPDATE, DELETE ON mark_changes TO postgres;")
+```
+
+### Step 4: Run the Migration
+Save the file. Then go back to your terminal (still in the `backend` folder) and run:
+```bash
+alembic upgrade head
+```
+
+### Step 5: Test the Trigger (The Final Boss)
+If the terminal says `Running upgrade...` with no errors, it worked!
+
+1. Go to **Supabase** -> **Table Editor**.
+2. Open the `question_marks` table.
+3. Change any `marks_obtained` value (e.g., from 15 to 18).
+4. Go to the `mark_changes` table and refresh the page.
+5. **BOOM!** You should see a new row with the old mark, new mark, and `System_Teacher`.
+
+Let me know when you see that log in Supabase! Then you can commit Step 5 and we will move to Step 6 (RLS).
+
 **Action 3: Edit the Migration File**
 Open that newly generated file. Delete everything in it and paste this code. 
 *(Note: Make sure you copy the `revision` and `down_revision` IDs from the top of your generated file and paste them into the variables below).*
