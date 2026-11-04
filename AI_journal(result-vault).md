@@ -5041,6 +5041,40 @@ def publish_script(script_id: int, authorization: str = Header(None)):
     db.close()
     return {"message": "Published successfully"}
 ```
+# I actually inserted a teacher but unable tos ee in authenticated users y? 
+
+<img width="1279" height="604" alt="image" src="https://github.com/user-attachments/assets/8b11bf5f-e747-46bb-81a5-0bd312fc4ed4" />
+This is a **brilliant** observation, and it perfectly highlights a very common point of confusion in backend development: **Authentication vs. Authorization.**
+
+Here is exactly why Mr. Smith isn't showing up in that list:
+
+### 1. The Two Different Worlds
+*   **The Screen You Are Looking At:** This is **Supabase Auth** (`auth.users`). It holds passwords, emails, and login sessions. It is the "Security Guard" at the front door.
+*   **What We Just Created:** The `teachers` table lives in your **Postgres Database** (`public.teachers`). It holds the business data (name, role).
+
+Right now, you have told the database "Mr. Smith is a teacher", but you haven't given Mr. Smith an ID card to log in. If he tries to log in right now, Supabase Auth will say, *"I've never heard of this guy."*
+
+### 2. Why We Need Both
+When `teacher@test.com` logs in:
+1.  **Supabase Auth** checks the password and gives them a JWT.
+2.  **FastAPI** reads that JWT and says, *"Okay, your email is teacher@test.com. Let me check the `teachers` table to see if you are actually a teacher."*
+3.  If they exist in *both*, they get the Teacher Dashboard.
+
+### How to fix it (Right Now):
+You need to create the Auth user for Mr. Smith so he can actually log in.
+
+1.  On the screen you are currently on, click the green **"Add user"** button in the top right.
+2.  Click **"Create New User"**.
+3.  **Email:** `teacher@test.com`
+4.  **Password:** `password123`
+5.  Make sure **"Auto Confirm User"** is checked.
+6.  Click **Create User**.
+
+Now, you will see `teacher@test.com` in that Auth list, **AND** you will see Mr. Smith in your `teachers` database table. 
+
+Once you do that, go to your frontend, log in with `teacher@test.com`, and you will finally see the Teacher Dashboard!
+
+Let me know when you create the Auth user and if the dashboard loads!
 
 ### Step 5: Update RLS (Supabase SQL Editor)
 Because we now have a `teachers` table, we can update the RLS policy on `mark_changes` to be even more secure. Instead of hardcoding `'teacher@test.com'`, we can check if the logged-in email exists in the `teachers` table.
