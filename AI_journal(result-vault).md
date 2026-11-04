@@ -4643,24 +4643,252 @@ export default function ResultPage() {
 ```
 
 **Action 5: Update the Login Redirect**
-Open `frontend/app/page.tsx`. Update the `handleLogin` success block:
+Here is the complete, fully updated `frontend/app/page.tsx`. 
+
+I have included the `useEffect` at the top (which auto-redirects you if you are already logged in) and the new `if/else` logic in the `handleLogin` function to send Teachers to `/dashboard` and Students to `/student`.
+
+Copy and paste this entire block into your file:
 
 ```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+
+  // If the user is already logged in, redirect them automatically
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        if (session.user.email.includes("teacher")) {
+          router.push("/dashboard");
+        } else {
+          router.push("/student");
+        }
+      }
+    };
+    checkUser();
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 1. Talk to Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    // 2. Handle the result
     if (error) {
-      alert(error.message);
+      alert(error.message); // Show error if wrong password
     } else {
+      // 3. THE ROLE-BASED REDIRECT
       if (email.includes("teacher")) {
-        router.push("/dashboard");
+        router.push("/dashboard"); // Send Teachers to the Teacher Dashboard
       } else {
-        router.push("/student");
+        router.push("/student");   // Send Students to the Student Portal
       }
     }
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-900 flex items-center justify-center p-8">
+      <form onSubmit={handleLogin} className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-3xl font-bold text-blue-400 mb-6 text-center">Login to Results Vault</h1>
+        
+        <div className="mb-4">
+          <label className="block text-gray-400 mb-2">Email</label>
+          <input
+            type="email"
+            className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-gray-400 mb-2">Password</label>
+          <input
+            type="password"
+            className="w-full bg-gray-700 text-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition duration-200">
+          Login
+        </button>
+      </form>
+    </main>
+  );
+}
 ```
+
+### What happens now:
+1.  If you log in with `teacher@test.com`, it sends you to `/dashboard` (the table of students).
+2.  If you log in with `student1@test.com`, it sends you to `/student` (the student portal).
+
+Save the file, test the logins, and let me know if you see both dashboards working! Once you do, we will commit Step 7 and move to the final step (Playwright + Documentation).
 
 **Action 6: Test the UI manually**
 1. Go to `http://localhost:3000`.
 2. Log in as `teacher@test.com`. You will see the Teacher Dashboard. Click "Publish" on a script.
 3. Log out. Log in as `student1@test.com`. You will see the Student Portal.
+
+# but we havent created teacher ids or a teacher table
+Awesome decision. Adding the `teachers` table is the right way to build a secure system. It prevents anyone from just signing up with a fake "teacher" email and gaining access to the grading system.
+
+Here is the step-by-step guide to implementing proper Teacher RBAC.
+
+---
+
+### Step 1: Update `backend/models.py`
+Open `backend/models.py` and add this `Teacher` class at the bottom:
+
+```python
+class Teacher(Base):
+    __tablename__ = "teachers"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+```
+
+### Step 2: Run Alembic Migration
+In your backend terminal (`venv` active):
+```bash
+alembic revision --autogenerate -m "add_teachers_table"
+alembic upgrade head
+```
+
+### Step 3: Insert your Test Teacher into Supabase
+Go to **Supabase SQL Editor** and run this:
+```sql
+INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');
+```
+
+### Step 4: Update `backend/main.py`
+You need to import the `Teacher` model and update your teacher endpoints to check the database.
+
+First, update your imports at the top of `main.py`:
+```python
+from models import Student, AnswerScript, Teacher # <-- Add Teacher here
+```
+
+Then, update your `/all-scripts` and `/publish/{script_id}` endpoints so they check the database instead of just trusting the JWT:
+
+```python
+# --- SECURE TEACHER ENDPOINTS ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Token")
+    
+    # 1. Verify the user is actually in the teachers table
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, os.getenv("SUPABASE_JWT_SECRET"), algorithms=["HS256"], options={"verify_aud": False})
+        user_email = payload.get("email")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    
+    # If they aren't in the teachers table, kick them out!
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Token")
+        
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, os.getenv("SUPABASE_JWT_SECRET"), algorithms=["HS256"], options={"verify_aud": False})
+        user_email = payload.get("email")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+    db = SessionLocal()
+    
+    # 1. Verify the user is a teacher
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    # 2. Publish the script
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+```
+
+### Step 5: Update RLS (Supabase SQL Editor)
+Because we now have a `teachers` table, we can update the RLS policy on `mark_changes` to be even more secure. Instead of hardcoding `'teacher@test.com'`, we can check if the logged-in email exists in the `teachers` table.
+
+1. Go to Supabase -> **Authentication** -> **Policies**.
+2. Delete the old policy on `mark_changes`.
+3. Click **New Policy** -> **For full customization**.
+4. **Name:** `Only registered teachers can view audit logs`
+5. **Command:** `SELECT`
+6. **USING expression:**
+```sql
+auth.jwt() ->> 'email' IN (SELECT email FROM teachers)
+```
+
+### Step 6: Test It!
+1. Open your frontend and log in as `teacher@test.com`. You will see the dashboard and can click "Publish".
+2. Now, go to **Supabase Auth** and create a new user: `hacker@test.com` with password `password123`. **Do NOT add this user to the `teachers` table.**
+3. Log in on the frontend with `hacker@test.com`. 
+4. Because the frontend checks `email.includes("teacher")`, it might not redirect them to `/dashboard`. But let's say they manually type `http://localhost:3000/dashboard`. They will get an error, and FastAPI will return a **403 Access Denied** because they are not in the teachers table!
+
+**Commit to GitHub:**
+```bash
+cd ..
+git add .
+git commit -m "Step 6.5: Added teachers table and strict RBAC for teacher endpoints"
+git push
+```
+
+Let me know when this works! Then we will do the final Playwright test and documentation.
 
 **Action 7: Commit to GitHub**
 Open your terminal in the root `idea-vault` folder:
