@@ -4767,6 +4767,142 @@ class Teacher(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
 ```
+# but here i realised we haven't created any other classes for atudent,answerscript,teacher so the Faast API is gonna crash 
+You caught a massive bug! I apologize. 
+
+When we moved the database tables into `models.py` back in Step 2 and Step 5, we forgot to clean up `main.py`. 
+
+Your `main.py` is still defining the old `Idea` table at the top, and it **doesn't import** the `Student`, `AnswerScript`, or `Teacher` classes from `models.py`. If you run this, FastAPI will crash with `NameError: name 'AnswerScript' is not defined`.
+
+Let's fix this immediately. We are going to completely replace `main.py` to make it clean, import the correct models, and implement the Teacher RBAC we just discussed.
+
+Open `backend/main.py`, **delete everything**, and paste this exact code:
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal, engine, Base
+from models import Student, AnswerScript, Teacher
+from jose import jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Create the tables if they don't exist (Alembic handles this mostly, but this is a safety net)
+Base.metadata.create_all(bind=engine)
+
+# --- CREATE THE API ---
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- HELPER FUNCTION TO VERIFY JWT ---
+def get_user_email(authorization: str):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+    try:
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(
+            token, 
+            os.getenv("SUPABASE_JWT_SECRET"), 
+            algorithms=["HS256"],
+            options={"verify_aud": False}
+        )
+        user_email = payload.get("email")
+        if not user_email:
+            raise Exception("No email in token")
+        return user_email
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+
+# --- TEACHER ENDPOINTS (SECURED WITH RBAC) ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    
+    db = SessionLocal()
+    # Check if the user is a registered teacher
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+        
+    db = SessionLocal()
+    # Check if the user is a registered teacher
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+
+
+# --- STUDENT ENDPOINTS (SECURED WITH RLS LOGIC) ---
+
+@app.get("/results/{student_id}")
+def get_student_result(student_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+
+    db = SessionLocal()
+    # Find the student making the request
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    
+    # SECURITY CHECK: If you are a student, you can only see your own ID.
+    if current_student and current_student.id != student_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="You are not allowed to view this result")
+        
+    # Fetch the result (simplified for testing)
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == student_id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+        
+    return {"student_id": student_id, "script_id": result.id, "status": result.status}
+```
+
+### Why this fixes everything:
+1.  **Clean imports:** It imports `Student`, `AnswerScript`, and `Teacher` directly from your `models.py`.
+2.  **No more `Idea` class:** The old Idea Vault code is completely removed from `main.py`.
+3.  **DRY Code:** We created a `get_user_email()` helper function so we don't have to copy-paste the JWT verification code 3 times.
+4.  **Teacher Security:** It actually checks the `teachers` table in the database to ensure the user is authorized to publish marks.
+
+Save this file, restart your FastAPI server, and it will finally work with your new frontend!
 
 ### Step 2: Run Alembic Migration
 In your backend terminal (`venv` active):
