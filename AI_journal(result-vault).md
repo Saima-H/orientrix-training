@@ -4904,6 +4904,51 @@ def get_student_result(student_id: int, authorization: str = Header(None)):
 
 Save this file, restart your FastAPI server, and it will finally work with your new frontend!
 
+Ah, I see exactly why you are confused! You are looking at `main.py` and thinking, *"Where are the `class Student` definitions?"*
+
+In the early days of the Idea Vault, we put the `Idea` table definition directly inside `main.py`. But when we set up **Alembic**, we moved all table definitions into `models.py`. 
+
+**`models.py` is where the tables are created.**
+
+Here is what is happening under the hood:
+
+### 1. Where are the tables defined?
+Open `backend/models.py`. You will see all your tables defined there:
+*   `class Student(Base): __tablename__ = "students" ...`
+*   `class Paper(Base): ...`
+*   `class AnswerScript(Base): ...`
+*   `class Teacher(Base): ...`
+
+### 2. How does `main.py` know about them?
+Look at line 4 of the code I gave you:
+```python
+from models import Student, AnswerScript, Teacher
+```
+By importing them, `main.py` tells Python: *"Hey, go look in `models.py` and bring those table definitions here so I can query them."*
+
+### 3. The Magic Line (Line 11)
+```python
+Base.metadata.create_all(bind=engine)
+```
+This line is a safety net. When FastAPI starts up, it looks at `Base.metadata` (which now contains the `Student`, `Teacher`, and `AnswerScript` tables imported from `models.py`) and tells the database: *"If these tables don't exist yet, create them."*
+
+*(Note: Since we already ran Alembic, the tables definitely exist. But this line ensures that if you delete the database and start fresh, FastAPI won't crash).*
+
+### Why we separate `models.py` and `main.py`:
+*   **`models.py`** = The Database Team. (It only cares about tables and columns).
+*   **`main.py`** = The API Team. (It only cares about routes, HTTP requests, and JWT tokens).
+
+It is an industry best practice to keep them separate so the files don't become 10,000 lines long.
+
+### So, what do you need to do right now?
+1. You do **not** need to create any tables in `main.py`. They are safely in `models.py`.
+2. Make sure you ran the Alembic migration for the `Teacher` table (`alembic revision --autogenerate -m "add_teachers_table"` and `alembic upgrade head`).
+3. Make sure you ran the SQL `INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');` in Supabase.
+
+Once that is done, restart your FastAPI server. The code is 100% correct. 
+
+Try logging into the frontend now as `teacher@test.com` and then as `student1@test.com`. Let me know what you see!
+
 ### Step 2: Run Alembic Migration
 In your backend terminal (`venv` active):
 ```bash
