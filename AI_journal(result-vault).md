@@ -5095,6 +5095,299 @@ auth.jwt() ->> 'email' IN (SELECT email FROM teachers)
 3. Log in on the frontend with `hacker@test.com`. 
 4. Because the frontend checks `email.includes("teacher")`, it might not redirect them to `/dashboard`. But let's say they manually type `http://localhost:3000/dashboard`. They will get an error, and FastAPI will return a **403 Access Denied** because they are not in the teachers table!
 
+# unable to publish anything and also im able to access the dashboard directly thru link
+so to publish 
+I see exactly what is happening. The UI looks beautiful, but the table is empty. This means your React state `scripts` is an empty array `[]`. 
+
+There are exactly **three possible reasons** why it's empty. Let's debug this like a pro:
+
+### Reason 1: The Database is empty (Most Likely)
+Remember when we ran `alembic upgrade head` to add the `teachers` table? Sometimes, running migrations drops or clears data depending on how the schema changed.
+1. Go to **Supabase** -> **Table Editor** -> **`answer_scripts`**.
+2. Are there any rows? 
+3. If it says "0 records", that's your problem. You need to re-run your `seed_data.py` script (`python seed_data.py`) to populate the students and scripts again.
+
+### Reason 2: The Teacher check is failing (403 Forbidden)
+In `main.py`, the `/all-scripts` endpoint checks if `teacher@test.com` exists in the `teachers` table. 
+1. Go to **Supabase** -> **Table Editor** -> **`teachers`**.
+2. Is `teacher@test.com` actually in there? If not, run this in the SQL Editor:
+   ```sql
+   INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');
+   ```
+
+### Reason 3: The frontend is hiding the error
+Right now, your frontend code says:
+```tsx
+if (res.ok) setScripts(await res.json());
+```
+If the API returns an error (like 403 or 500), the frontend just silently ignores it and shows an empty table. 
+
+Let's fix the frontend so we can *see* what the error is. Open `frontend/app/dashboard/page.tsx` and update the `fetchScripts` function:
+
+```tsx
+  const fetchScripts = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("http://127.0.0.1:8000/all-scripts", {
+      headers: { "Authorization": `Bearer ${session?.access_token}` }
+    });
+    
+    if (res.ok) {
+      setScripts(await res.json());
+    } else {
+      // SHOW THE ERROR ON THE SCREEN
+      const errorData = await res.json();
+      alert("Error from API: " + errorData.detail);
+    }
+    setLoading(false);
+  };
+```
+
+### 🕵️ How to check in 10 seconds (The Network Tab)
+1. On your Teacher Dashboard, right-click and click **Inspect**.
+2. Go to the **Network** tab.
+3. Refresh the page.
+4. Click on the request named **`all-scripts`**.
+5. Look at the **Status** and **Response** on the right side. 
+   * If it says `200 OK` but the response is `[]`, your database is empty.
+   * If it says `403 Forbidden`, your backend is blocking you.
+
+for the dashboard
+
+
+
+You have just discovered a **critical security flaw** in the frontend. This is an excellent catch. 
+
+Right now, anyone can type `http://localhost:3000/dashboard` and see the Teacher UI, even if they are not logged in or if they are logged in as a student. 
+
+*(Note: The data is still safe because FastAPI will reject the request with a 403 Forbidden if they aren't a real teacher. But the UI should not even be visible to them).*
+
+In Next.js, the `page.tsx` file just renders whatever HTML you tell it to. It doesn't know who is logged in until you explicitly check.
+
+Let's fix this by adding a **Route Guard**. We will check the user's session inside the `useEffect` when the page loads. If they aren't a teacher, we kick them out.
+
+Here is the fully updated `frontend/app/dashboard/page.tsx`. Replace your entire file with this:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation"; // <-- ADDED ROUTER
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function TeacherDashboard() {
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter(); // <-- INITIALIZE ROUTER
+
+  // --- THE ROUTE GUARD ---
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If not logged in, kick to login page
+      if (!session) {
+        router.push("/");
+        return;
+      }
+      
+      // If logged in but not a teacher, kick to student portal
+      if (!session.user.email?.includes("teacher")) {
+        router.push("/student");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // --- FETCH DATA ---
+  const fetchScripts = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("http://127.0.0.1:8000/all-scripts", {
+      headers: { "Authorization": `Bearer ${session?.access_token}` }
+    });
+    
+    if (res.ok) {
+      setScripts(await res.json());
+    } else {
+      const errorData = await res.json();
+      console.error("API Error:", errorData.detail);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchScripts();
+  }, []);
+
+  const handlePublish = async (scriptId: number) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch(`http://127.0.0.1:8000/publish/${scriptId}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${session?.access_token}` }
+    });
+    fetchScripts(); 
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-400">👩‍🏫 Teacher Dashboard</h1>
+        <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Log Out</button>
+      </div>
+      
+      <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Class Answer Scripts</h2>
+        
+        {scripts.length === 0 ? (
+          <p className="text-gray-400">No scripts found. (Did you run seed_data.py?)</p>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-600 text-gray-300">
+                <th className="p-3">Script ID</th>
+                <th className="p-3">Student Name</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scripts.map((script) => (
+                <tr key={script.id} className="border-b border-gray-700 hover:bg-gray-750">
+                  <td className="p-3">{script.id}</td>
+                  <td className="p-3">{script.student_name}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-sm font-semibold ${script.status === 'Published' ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'}`}>
+                      {script.status}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {script.status !== "Published" && (
+                      <button 
+                        onClick={() => handlePublish(script.id)} 
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm transition"
+                      >
+                        Publish
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+### What we just added:
+1.  **`useRouter`:** We imported the router.
+2.  **`checkAuth()`:** When the page loads, it asks Supabase: *"Is there a session?"* If no, it redirects to `/`. If yes, it checks if the email contains `teacher`. If it doesn't, it redirects them to `/student`.
+
+Now, if you log out and try to type `http://localhost:3000/dashboard` directly, it will instantly bounce you back to the login page. 
+
+Also, I added a nice check: `{scripts.length === 0 ? ... }`. This will tell you if your database is actually empty! 
+
+Let's do the same thing for the Student Portal to secure it as well. Replace `frontend/app/student/page.tsx` with this:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+export default function StudentPortal() {
+  const [user, setUser] = useState<any>(null);
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Route Guard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/");
+      } else if (session.user.email?.includes("teacher")) {
+        router.push("/dashboard"); // Teachers shouldn't be here
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (!user) return setLoading(false);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`http://127.0.0.1:8000/results/1`, {
+        headers: { "Authorization": `Bearer ${session?.access_token}` }
+      });
+
+      if (res.ok) setResult(await res.json());
+      setLoading(false);
+    };
+    fetchResult();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-green-400">🧑‍🎓 Student Portal</h1>
+        <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Log Out</button>
+      </div>
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md mx-auto shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Your Results</h2>
+        <p className="text-gray-400 mb-4">Logged in as: {user?.email}</p>
+        {result ? (
+          <div className="bg-gray-700 p-4 rounded">
+            <p><strong>Script ID:</strong> {result.script_id}</p>
+            <p><strong>Status:</strong> {result.status}</p>
+            {result.status === "Published" ? (
+               <p className="text-green-400 mt-2 font-bold">Marks are available!</p>
+            ) : (
+               <p className="text-yellow-400 mt-2">Waiting for teacher to publish.</p>
+            )}
+          </div>
+        ) : (
+          <p>No results found.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+Save both files. Now try to access `/dashboard` while logged in as a student, or `/student` while logged in as a teacher. It will automatically bounce you to the correct place. **You have just implemented secure routing.**
+
+
+
+
+
 **Commit to GitHub:**
 ```bash
 cd ..
