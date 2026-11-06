@@ -5405,7 +5405,134 @@ git add .
 git commit -m "Step 7: Built Results Vault frontend (Teacher Dashboard & Student Portal)"
 git push
 ```
+Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
+This step proves to the reviewer that your security works in a real browser, not just in Swagger or the SQL Editor.
 
+---
+
+### 📚 1. Pre-requisites (Quick Revision)
+*   **Playwright:** A tool that opens a real Chrome browser, types, clicks, and reads the screen automatically.
+*   **E2E (End-to-End) Testing:** Testing the app exactly like a real user would (Frontend -> Backend -> Database).
+*   **URL Tampering:** A common hack where a user changes the URL (e.g., from `/results/1` to `/results/2`) to steal data.
+
+---
+
+### 📝 2. Step Summary (What needs to be done)
+1.  Ensure both Next.js and FastAPI servers are running.
+2.  Create a Playwright test file in your QA folder.
+3.  The test will log in as Student 1, verify they can see their own result, then try to hack the URL to see Student 2's result and assert that it is blocked.
+4.  Run the test and commit.
+
+---
+
+### 🗺️ 3. Architecture Tracker (Where are we?)
+
+We are testing the **Entire System** from the outside in (highlighted in bright green). Playwright acts as the hacker, trying to break through the Frontend, Backend, and Database layers.
+
+```mermaid
+flowchart TD
+    subgraph Testing ["Playwright E2E Testing"]
+        Hacker["🤖 Playwright Browser<br/>(Acts as Student 1)"]:::highlight
+    end
+
+    subgraph Frontend ["Next.js Frontend"]
+        ResultsPage["Result Page<br/>(/results/[id])"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        Endpoint["GET /results/{id}"]
+        JWT["JWT Verification<br/>(Checks ID vs Token)"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security"}
+        Relational[("Relational Tables")]
+    end
+
+    %% --- THE HIGHLIGHT ---
+    style Hacker fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:4px
+    Hacker -- "👉 WE ARE HERE (Step 8) 👈" --> Hacker
+
+    %% Flows
+    Hacker -->|1. Tampers URL to /results/2| ResultsPage
+    ResultsPage -->|2. Sends Request| Endpoint
+    Endpoint --> JWT
+    JWT -->|3. "ID 2 != Student 1"| RLS
+    RLS -->|4. Blocks Access| Endpoint
+    Endpoint -->|5. Returns 403 Forbidden| ResultsPage
+    ResultsPage -->|6. Shows Red Error| Hacker
+```
+
+---
+
+### 🛠️ 4. The Process (Execute these actions)
+
+**Action 1: Ensure Servers are Running**
+You need to have **three** terminal windows open for this to work:
+1.  **Terminal 1 (Backend):** `uvicorn main:app --reload`
+2.  **Terminal 2 (Frontend):** `npm run dev`
+3.  **Terminal 3 (QA/Playwright):** (We will use this for the test).
+
+*(Make sure `student1@test.com` exists in Supabase Auth with password `password123`).*
+
+**Action 2: Create the Test File**
+1. Open a new terminal (Terminal 3).
+2. Navigate to your QA folder:
+   ```bash
+   cd C:\Users\samh7\qa-saucedemo-playwright
+   ```
+3. Create a new file named **`results-vault.spec.ts`**.
+4. Paste this exact code:
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('Student cannot view another student result via URL tampering', async ({ page }) => {
+  // 1. Go to Login Page
+  await page.goto('http://localhost:3000/');
+  
+  // 2. Log in as Student 1
+  await page.fill('input[type="email"]', 'student1@test.com');
+  await page.fill('input[type="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  
+  // 3. Wait for redirect to Student Portal
+  await page.waitForURL('**/student');
+
+  // 4. Try to access own result (Should Work)
+  await page.goto('http://localhost:3000/results/1');
+  await expect(page.locator('text=Script ID:')).toBeVisible();
+
+  // 5. THE HACK: Tamper the URL to see Student 2's result
+  await page.goto('http://localhost:3000/results/2');
+  
+  // 6. Verify the Backend blocked it
+  await expect(page.locator('text=Error:')).toBeVisible();
+  await expect(page.locator('text=You are not allowed to view this result')).toBeVisible();
+});
+```
+
+**Action 3: Run the Test**
+In your QA terminal, run:
+```bash
+npx playwright test results-vault.spec.ts --headed
+```
+
+**What you will see:**
+1. A Chrome browser pops up.
+2. It automatically types `student1@test.com` and logs in.
+3. It goes to `/results/1` and successfully loads the script ID.
+4. It jumps to `/results/2` and a big red "Error: You are not allowed to view this result" appears on the screen.
+5. In your terminal, you will see **`1 passed`**. 
+
+**Action 4: Commit to GitHub**
+Go to your root `idea-vault` folder:
+```bash
+cd C:\Users\samh7\idea-vault
+git add .
+git commit -m "Step 8: Added Playwright E2E test for URL tampering protection"
+git push
+```
 
 
