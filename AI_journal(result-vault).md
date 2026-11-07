@@ -5405,6 +5405,10 @@ git add .
 git commit -m "Step 7: Built Results Vault frontend (Teacher Dashboard & Student Portal)"
 git push
 ```
+
+# major issue in the app is with the dashboard
+
+# if i apply 
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
 This step proves to the reviewer that your security works in a real browser, not just in Swagger or the SQL Editor.
