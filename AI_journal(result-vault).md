@@ -5096,6 +5096,12 @@ auth.jwt() ->> 'email' IN (SELECT email FROM teachers)
 4. Because the frontend checks `email.includes("teacher")`, it might not redirect them to `/dashboard`. But let's say they manually type `http://localhost:3000/dashboard`. They will get an error, and FastAPI will return a **403 Access Denied** because they are not in the teachers table!
 
 # unable to publish anything and also im able to access the dashboard directly thru link
+<img width="1274" height="633" alt="image" src="https://github.com/user-attachments/assets/cfb60554-0ce7-4b16-9888-be4b1c0bcb70" />
+<img width="1276" height="623" alt="image" src="https://github.com/user-attachments/assets/d7c2d652-92ca-4e52-8dd3-c53c41495693" />
+<img width="1279" height="635" alt="image" src="https://github.com/user-attachments/assets/c8c99fce-82bf-400f-920d-b83ed8ef74fb" />
+
+
+
 so to publish 
 I see exactly what is happening. The UI looks beautiful, but the table is empty. This means your React state `scripts` is an empty array `[]`. 
 
