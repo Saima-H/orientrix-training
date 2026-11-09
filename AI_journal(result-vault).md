@@ -5790,6 +5790,110 @@ python seed_data.py
 2. Because we added the email to the students in this new script, don't forget to log in as `teacher@test.com`.
 3. You should now see all 30 students populated in the table, and the "Publish" buttons should be working!
 
+# another error ,reason-email(same repeated 3 times-it violates the constraint)
+I see the exact problem. This is a great catch by the database.
+
+Look at the error: `duplicate key value violates unique constraint "students_email_key"`.
+
+### Why it happened:
+In the `seed_data.py` script I gave you, the email generation was:
+`email=f'student{i}@test.com'`
+
+Because the loop runs 3 times (once for each section A, B, and C), it tries to insert `student1@test.com` three separate times. Since emails must be unique in the database, it crashes on the second section.
+
+### The Fix:
+We just need to use a global counter so every student gets a unique email from `student1@test.com` all the way to `student30@test.com`. 
+
+Here is the fully fixed `seed_data.py`. Replace everything in your `backend/seed_data.py` with this:
+
+```python
+from database import SessionLocal
+from models import Student, Paper, Question, AnswerScript, QuestionMark
+import random
+
+def seed_database():
+    db = SessionLocal()
+    
+    print("Deleting old data...")
+    # We delete in this specific order because of Foreign Key constraints
+    db.query(QuestionMark).delete()
+    db.query(AnswerScript).delete()
+    db.query(Question).delete()
+    db.query(Paper).delete()
+    db.query(Student).delete()
+    db.commit()
+
+    print("Inserting 30 students...")
+    students = []
+    student_counter = 1
+    for section in ['A', 'B', 'C']:
+        for i in range(1, 11):
+            student = Student(
+                name=f'Student_{section}_{i}',
+                email=f'student{student_counter}@test.com', # <-- FIXED: Unique email counter
+                roll_number=i,
+                class_name='10',
+                section=section,
+                admission_number=f'ADM_{section}_{i}'
+            )
+            students.append(student)
+            student_counter += 1
+            
+    db.add_all(students)
+    db.commit()
+
+    print("Inserting Papers and Questions...")
+    math_paper = Paper(name='Math Midterm', total_max_marks=100)
+    science_paper = Paper(name='Science Final', total_max_marks=100)
+    db.add_all([math_paper, science_paper])
+    db.commit()
+
+    # Questions for Math (Paper 1)
+    math_questions = []
+    for i in range(1, 6):
+        q = Question(paper_id=math_paper.id, question_number=i, max_marks=20, choice_group=None)
+        math_questions.append(q)
+        db.add(q)
+        
+    # Questions for Science (Paper 2)
+    science_questions = []
+    science_questions.append(Question(paper_id=science_paper.id, question_number=1, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=2, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=3, max_marks=25, choice_group='Group B'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=4, max_marks=25, choice_group='Group B'))
+    for q in science_questions:
+        db.add(q)
+        
+    db.commit() # Commit to get the actual generated Question IDs
+
+    print("Creating Scripts and Assigning Marks...")
+    for student in students:
+        script = AnswerScript(paper_id=math_paper.id, student_id=student.id)
+        db.add(script)
+        db.commit() # Commit to get the actual generated Script ID
+
+        # Add random marks using the actual Question IDs
+        for q in math_questions:
+            mark = random.randint(5, 20)
+            qm = QuestionMark(script_id=script.id, question_id=q.id, marks_obtained=mark)
+            db.add(qm)
+    
+    db.commit()
+    db.close()
+    print("Database seeded successfully!")
+
+if __name__ == "__main__":
+    seed_database()
+```
+
+### Step 2: Run the script again
+Save the file and run it in your terminal:
+```powershell
+python seed_data.py
+```
+
+Now it will successfully populate the database with all 30 students and their marks. After it finishes, go back to `http://localhost:3000/dashboard` and refresh. You will finally see the full list of students!
+
 
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
