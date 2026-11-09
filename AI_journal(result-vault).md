@@ -5413,6 +5413,11 @@ git push
 ```
 
 # major issue in the app is with the dashboard
+<img width="1272" height="592" alt="image" src="https://github.com/user-attachments/assets/4d767968-a598-442b-8117-5e0df53d3d02" />
+
+<img width="1275" height="583" alt="image" src="https://github.com/user-attachments/assets/4075abb1-2446-4f04-9eeb-300b7ecaee22" />
+
+
 
 # if i apply 
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
