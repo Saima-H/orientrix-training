@@ -6119,6 +6119,160 @@ This forces Supabase to generate a brand new, fresh Access Token. From now on, a
 *(Note: If you log out and log back in, and you STILL get the Invalid Token error, it means your `backend/.env` file is missing the `SUPABASE_JWT_SECRET`. Let me know if that happens).*
 
 Go ahead and log out and log back in. The table should populate immediately!
+# tried everything but nothing worked so the next possible way is to debug using the main.py
+Here is the complete `backend/main.py` file with the debugging print statements added. 
+
+Replace everything in your `main.py` with this exact code. 
+
+I added detailed print statements inside the `get_user_email` function. It will show us exactly *why* the token is being rejected.
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal, engine, Base
+from models import Student, AnswerScript, Teacher
+from jose import jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Create the tables if they don't exist
+Base.metadata.create_all(bind=engine)
+
+# --- CREATE THE API ---
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- HELPER FUNCTION TO VERIFY JWT (WITH DEBUG PRINTS) ---
+def get_user_email(authorization: str):
+    print("\n--- DEBUG: Checking Token ---")
+    
+    if not authorization or not authorization.startswith("Bearer "):
+        print("DEBUG ERROR: Missing or invalid Authorization header format.")
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+        
+    try:
+        token = authorization.split(" ")[1]
+        print(f"DEBUG: Received Token (first 20 chars): {token[:20]}...")
+        
+        secret = os.getenv("SUPABASE_JWT_SECRET")
+        if not secret:
+            print("DEBUG ERROR: SUPABASE_JWT_SECRET is missing from .env file!")
+        else:
+            print(f"DEBUG: Secret loaded from .env (first 10 chars): {secret[:10]}...")
+            
+        payload = jwt.decode(
+            token, 
+            secret, 
+            algorithms=["HS256"],
+            options={"verify_aud": False}
+        )
+        print(f"DEBUG: Successfully decoded payload: {payload}")
+        
+        user_email = payload.get("email")
+        if not user_email:
+            print("DEBUG ERROR: No email found inside the token payload.")
+            raise Exception("No email in token")
+            
+        print(f"DEBUG: Authenticated user email: {user_email}")
+        print("--- DEBUG: Check Complete ---\n")
+        return user_email
+        
+    except Exception as e:
+        print(f"DEBUG ERROR: Token validation failed. Reason: {str(e)}")
+        print("--- DEBUG: Check Complete ---\n")
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+
+# --- TEACHER ENDPOINTS (SECURED WITH RBAC) ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    
+    db = SessionLocal()
+    # Check if the user is a registered teacher
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        print(f"DEBUG ERROR: {user_email} is not in the teachers table.")
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+        
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+
+
+# --- STUDENT ENDPOINTS ---
+
+@app.get("/results/{student_id}")
+def get_student_result(student_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+
+    db = SessionLocal()
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    
+    if current_student and current_student.id != student_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="You are not allowed to view this result")
+        
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == student_id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+        
+    return {"student_id": student_id, "script_id": result.id, "status": result.status}
+```
+
+### What to do next:
+1. Save the file. Your `uvicorn` server will automatically restart.
+2. Go back to your browser, log out, and log back in as `teacher@test.com`.
+3. Look at your **FastAPI terminal**. 
+
+The terminal will now print exactly what is wrong. It will either say:
+*   `SUPABASE_JWT_SECRET is missing from .env file!`
+*   `Token validation failed. Reason: Signature verification failed.` (Means your secret is wrong).
+*   Or it will print the decoded payload successfully.
+
+Copy and paste the `DEBUG` output from your terminal here if it's still failing!
 
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
