@@ -6658,6 +6658,342 @@ Once you make them match (I recommend Option 1), go to your frontend:
 Because the Auth system will now accept the login, AND the database has that email, the 30 students will finally appear on your screen! Let me know when they do!
 # finallly -but the script id strts from 33
 <img width="1279" height="590" alt="image" src="https://github.com/user-attachments/assets/8a2ec101-e7f4-47c4-bb79-83d30ee59704" />
+# after publishing
+<img width="1279" height="596" alt="image" src="https://github.com/user-attachments/assets/0d9224b8-7943-48fd-be8d-3ec62d67721c" />
+
+# unable to see the published result 
+student table i have
+<img width="1276" height="595" alt="image" src="https://github.com/user-attachments/assets/b6e66e5f-33aa-40cb-ae9a-17f680ac3bd1" />
+users i have
+<img width="1278" height="633" alt="image" src="https://github.com/user-attachments/assets/b22e9da3-bc67-4f68-b930-78509c23a677" />
+# also the published results being from sript id-33 and student table has id-from 72
+
+Here is the complete, start-to-finish message with all the updated code blocks. Just copy and paste them one by one.
+
+### Step 1: Wipe the Database Clean
+Go to your **Supabase SQL Editor** and run this exact command. This will delete all old data and reset the auto-increment IDs back to 1.
+
+```sql
+TRUNCATE TABLE question_marks RESTART IDENTITY CASCADE;
+TRUNCATE TABLE answer_scripts RESTART IDENTITY CASCADE;
+TRUNCATE TABLE questions RESTART IDENTITY CASCADE;
+TRUNCATE TABLE papers RESTART IDENTITY CASCADE;
+TRUNCATE TABLE students RESTART IDENTITY CASCADE;
+```
+
+### Step 2: Update `backend/seed_data.py`
+Replace the entire contents of `backend/seed_data.py` with this code. Notice how it now uses `TRUNCATE` to reset the IDs every time you run it, keeping everything perfectly aligned.
+
+```python
+from database import SessionLocal
+from models import Student, Paper, Question, AnswerScript, QuestionMark
+from sqlalchemy import text
+import random
+
+def seed_database():
+    db = SessionLocal()
+    
+    print("Wiping data and resetting IDs...")
+    db.execute(text("TRUNCATE TABLE question_marks RESTART IDENTITY CASCADE;"))
+    db.execute(text("TRUNCATE TABLE answer_scripts RESTART IDENTITY CASCADE;"))
+    db.execute(text("TRUNCATE TABLE questions RESTART IDENTITY CASCADE;"))
+    db.execute(text("TRUNCATE TABLE papers RESTART IDENTITY CASCADE;"))
+    db.execute(text("TRUNCATE TABLE students RESTART IDENTITY CASCADE;"))
+    db.commit()
+
+    print("Inserting 30 students...")
+    students = []
+    student_counter = 1
+    for section in ['A', 'B', 'C']:
+        for i in range(1, 11):
+            student = Student(
+                name=f'Student_{section}_{i}',
+                email=f'student{student_counter}@test.com', 
+                roll_number=i,
+                class_name='10',
+                section=section,
+                admission_number=f'ADM_{section}_{i}'
+            )
+            students.append(student)
+            student_counter += 1
+            
+    db.add_all(students)
+    db.commit()
+
+    print("Inserting Papers and Questions...")
+    math_paper = Paper(name='Math Midterm', total_max_marks=100)
+    science_paper = Paper(name='Science Final', total_max_marks=100)
+    db.add_all([math_paper, science_paper])
+    db.commit()
+
+    math_questions = []
+    for i in range(1, 6):
+        q = Question(paper_id=math_paper.id, question_number=i, max_marks=20, choice_group=None)
+        math_questions.append(q)
+        db.add(q)
+        
+    science_questions = []
+    science_questions.append(Question(paper_id=science_paper.id, question_number=1, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=2, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=3, max_marks=25, choice_group='Group B'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=4, max_marks=25, choice_group='Group B'))
+    for q in science_questions:
+        db.add(q)
+        
+    db.commit() 
+
+    print("Creating Scripts and Assigning Marks...")
+    for student in students:
+        script = AnswerScript(paper_id=math_paper.id, student_id=student.id)
+        db.add(script)
+        db.commit()
+
+        for q in math_questions:
+            mark = random.randint(5, 20)
+            qm = QuestionMark(script_id=script.id, question_id=q.id, marks_obtained=mark)
+            db.add(qm)
+    
+    db.commit()
+    db.close()
+    print("Database seeded successfully!")
+
+if __name__ == "__main__":
+    seed_database()
+```
+**Run it in your terminal:** `python seed_data.py`
+
+### Step 3: Update `backend/main.py`
+We need to add a new endpoint `/my-results` so the Student Portal fetches data based on their *token*, not a hardcoded ID. We keep `/results/{student_id}` so Playwright can test URL tampering.
+
+Replace everything in `backend/main.py` with this:
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal, engine, Base
+from models import Student, AnswerScript, Teacher
+import jwt
+from jwt import PyJWKClient
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+JWKS_URL = "https://kcphopjpvtrllckyjnfd.supabase.co/auth/v1/.well-known/jwks.json"
+jwks_client = PyJWKClient(JWKS_URL)
+
+def get_user_email(authorization: str):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+    try:
+        token = authorization.split(" ")[1]
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        payload = jwt.decode(token, signing_key.key, algorithms=["ES256", "RS256"], options={"verify_aud": False})
+        user_email = payload.get("email")
+        if not user_email:
+            raise Exception("No email in token")
+        return user_email
+    except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+# --- TEACHER ENDPOINTS ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+
+# --- STUDENT ENDPOINTS ---
+
+@app.get("/my-results")
+def get_my_result(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    db = SessionLocal()
+    
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    if not current_student:
+        db.close()
+        raise HTTPException(status_code=404, detail="Student record not found")
+
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == current_student.id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="No answer script found")
+        
+    return {"student_id": current_student.id, "script_id": result.id, "status": result.status}
+
+@app.get("/results/{student_id}")
+def get_student_result(student_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    db = SessionLocal()
+    
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    
+    # Security check: Students can only see their own ID.
+    if current_student and current_student.id != student_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="You are not allowed to view this result")
+        
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == student_id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+        
+    return {"student_id": student_id, "script_id": result.id, "status": result.status}
+```
+
+### Step 4: Update `frontend/app/student/page.tsx`
+We need the student portal to call `/my-results` instead of `/results/1`. Replace the entire file with this:
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+export default function StudentPortal() {
+  const [user, setUser] = useState<any>(null);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/");
+      } else if (session.user.email?.includes("teacher")) {
+        router.push("/dashboard"); 
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (!user) return setLoading(false);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // CHANGED: Now fetching /my-results
+      const res = await fetch(`http://127.0.0.1:8000/my-results`, {
+        headers: { "Authorization": `Bearer ${session?.access_token}` }
+      });
+
+      if (res.ok) {
+        setResult(await res.json());
+      } else {
+        const errData = await res.json();
+        setError(errData.detail || "Could not fetch result");
+      }
+      setLoading(false);
+    };
+    fetchResult();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-green-400">🧑‍🎓 Student Portal</h1>
+        <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Log Out</button>
+      </div>
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md mx-auto shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Your Results</h2>
+        <p className="text-gray-400 mb-4">Logged in as: {user?.email}</p>
+        
+        {error ? (
+          <div className="bg-red-900 p-4 rounded border border-red-500">
+            <p>{error}</p>
+          </div>
+        ) : result ? (
+          <div className="bg-gray-700 p-4 rounded">
+            <p><strong>Script ID:</strong> {result.script_id}</p>
+            <p><strong>Status:</strong> {result.status}</p>
+            {result.status === "Published" ? (
+               <p className="text-green-400 mt-2 font-bold">Marks are available!</p>
+            ) : (
+               <p className="text-yellow-400 mt-2">Waiting for teacher to publish.</p>
+            )}
+          </div>
+        ) : (
+          <p>No results found.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+### Step 5: The Final Manual Test
+1. Restart your FastAPI server.
+2. Log in as `teacher@test.com`, click **Publish** on Script ID 1 (which belongs to Student A_1).
+3. Log out, log in as `student1@test.com`.
+4. The portal will now correctly fetch and show **Script ID: 1**, and it will say **"Marks are available!"**.
+
+Once you see this, your frontend is perfectly aligned! Let me know.
 
 
 
