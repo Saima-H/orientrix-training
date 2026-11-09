@@ -6058,6 +6058,68 @@ A popup will appear. Here is exactly what it means and how to fix it:
 4. **No popup, but still empty?**
    * *Reason:* The database is actually empty.
    * *Fix:* Go to your `backend` terminal (make sure `(venv)` is active) and run `python seed_data.py`. Then go to Supabase -> Table Editor -> `answer_scripts` and make sure there are 30 rows.
+  
+     <img width="1277" height="634" alt="image" src="https://github.com/user-attachments/assets/644f0df2-f75b-4921-97a3-958eb38340ce" />
+     Perfect! The error popup tells us exactly what we need to fix. Your frontend is successfully sending a request, but your FastAPI backend is rejecting the token as "Invalid".
+
+This is almost always caused by one of two things. Let's fix it now:
+
+### 1. Your token expired
+Supabase tokens expire after 1 hour. If you logged in a while ago, the token is dead.
+**Fix:** Go to `http://localhost:3000`, click **Log Out**, and then **Log In** again with `teacher@test.com`. 
+
+### 2. Your Backend Secret is missing or wrong
+Open `backend/.env` and make sure you have this exact line (with the long string from your Supabase Legacy JWT Settings):
+```env
+SUPABASE_JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 3. Restart FastAPI
+If you just updated the `.env` file, you **must** restart FastAPI for it to read the new secret.
+1. Go to your FastAPI terminal.
+2. Press `Ctrl+C` to stop it.
+3. Run `uvicorn main:app --reload` to start it again.
+
+---
+
+### Why is this happening? (The Concept)
+When you log in, Supabase gives you a JWT. FastAPI takes that JWT, grabs the `SUPABASE_JWT_SECRET`, and uses it to mathematically verify that the token wasn't forged by a hacker. 
+
+If the secret is missing, or the token is older than 1 hour, the math fails, and FastAPI throws `Invalid Token`.
+
+Once you log out and log back in (and verify the secret in `.env`), the alert will go away, and the table will populate with your 30 students!
+# so am i supposed to update every 1 hr then ????
+No bro, you don't have to do this every hour! 
+
+Let me explain what is actually happening behind the scenes. 
+
+### How Tokens Work (The Access Token vs. Refresh Token)
+When you log in, Supabase gives your browser two things:
+1.  **Access Token (JWT):** This is the VIP pass. It expires in 1 hour for security reasons (if a hacker steals it, it becomes useless quickly).
+2.  **Refresh Token:** This is a long-lived key (lasts for weeks). 
+
+### Does Supabase handle this automatically?
+**Yes.** The Supabase client library (`@supabase/supabase-js`) is incredibly smart. 
+Every time you make a request, it checks if the Access Token is about to expire. If it is, it automatically uses the Refresh Token in the background to get a new Access Token. You (the user) never notice it happening.
+
+### So why did you get the "Invalid Token" error today?
+There are only 3 reasons this happened:
+1.  **You left the browser open for days:** The refresh token might have expired because you hadn't interacted with the app in a long time. 
+2.  **Your FastAPI Secret is missing/wrong:** FastAPI doesn't know how to verify the token because `SUPABASE_JWT_SECRET` is missing from your `.env` file.
+3.  **You changed your backend code:** When you restart FastAPI, it loses its memory of old sessions, but the frontend might be holding an old token. 
+
+### The One-Time Fix
+You only need to do this once to get back on track:
+1. Go to `http://localhost:3000`.
+2. Click **Log Out**.
+3. **Log In** again with `teacher@test.com`.
+
+This forces Supabase to generate a brand new, fresh Access Token. From now on, as long as you use the app regularly, Supabase will keep refreshing it automatically in the background.
+
+*(Note: If you log out and log back in, and you STILL get the Invalid Token error, it means your `backend/.env` file is missing the `SUPABASE_JWT_SECRET`. Let me know if that happens).*
+
+Go ahead and log out and log back in. The table should populate immediately!
+
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
