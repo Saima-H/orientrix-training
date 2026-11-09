@@ -7173,7 +7173,16 @@ npx playwright test results-vault.spec.ts --headed
 2. It automatically types `student1@test.com` and logs in.
 3. It goes to `/results/1` and successfully loads the script ID.
 4. It jumps to `/results/2` and a big red "Error: You are not allowed to view this result" appears on the screen.
-5. In your terminal, you will see **`1 passed`**. 
+5. In your terminal, you will see **`1 passed`**.
+
+# after running headed test it just went to the login page and stopped after entering details and i got this error
+<img width="1049" height="523" alt="image" src="https://github.com/user-attachments/assets/60b14a7a-2105-477b-b2ca-276ed1ad35bb" />
+
+this happend coz i gave password as :password@123
+i again created student1@test.com and set password as:password123
+<img width="1013" height="163" alt="image" src="https://github.com/user-attachments/assets/48a518fe-9032-4ab8-afb5-75e9a697394c" />
+
+
 
 **Action 4: Commit to GitHub**
 Go to your root `idea-vault` folder:
