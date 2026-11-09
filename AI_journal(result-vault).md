@@ -6667,8 +6667,18 @@ student table i have
 users i have
 <img width="1278" height="633" alt="image" src="https://github.com/user-attachments/assets/b22e9da3-bc67-4f68-b930-78509c23a677" />
 # also the published results being from sript id-33 and student table has id-from 72
+Here is exactly what is happening and how we fix it so everything aligns perfectly.
 
-Here is the complete, start-to-finish message with all the updated code blocks. Just copy and paste them one by one.
+Why are the IDs 72+?
+When you ran seed_data.py multiple times, the script did DELETE FROM students. But in PostgreSQL, deleting rows does not reset the auto-increment counter. So the first time it created IDs 1-30. The next time, it started at 72.
+
+Why is Script ID 33 mismatched?
+Script ID 33 was created in a previous run. When you deleted the students and re-seeded them, the new scripts got much higher IDs. So Script 33 is now an "orphan" (it points to a student ID that no longer exists).
+
+The Fix: Wipe it clean and reset the counters
+Let's completely wipe the database and reset the ID counters back to 1 so it's clean.
+
+
 
 ### Step 1: Wipe the Database Clean
 Go to your **Supabase SQL Editor** and run this exact command. This will delete all old data and reset the auto-increment IDs back to 1.
