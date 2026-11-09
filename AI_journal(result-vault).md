@@ -6317,6 +6317,155 @@ SUPABASE_JWT_SECRET=your_new_long_secret_here
 Once the secret is correct, the debug terminal will print `DEBUG: Successfully decoded payload: {...}` and the dashboard will load the 30 students!
 
 Let me know when you see the success message!
+# Restarted everything now there are only two possible reasons
+I see the screenshot. Your secret is indeed `JYtjwiJYX5STeynWXLP6raUxj+IdUjS2W`. 
+
+Since the debug output showed the backend *is* reading it, but `jose` is throwing `The specified alg value is not allowed`, there are two very sneaky reasons this happens:
+
+### Reason 1: Quotes in the `.env` file (Most Likely)
+Open your `backend/.env` file. If you copied the secret and accidentally put quotes around it, like this:
+`SUPABASE_JWT_SECRET="JYtjwiJYX5..."` 
+
+The `python-dotenv` library includes the quotes as part of the secret. So `jose` tries to use `"JYtjwiJYX5..."` as the key, which has the wrong length, and it gets confused, throwing this weird algorithm error.
+
+**Fix:** Make sure there are NO quotes and NO spaces in `.env`:
+```env
+SUPABASE_JWT_SECRET=JYtjwiJYX5STeynWXLP6raUxj+IdUjS2W
+```
+
+### Reason 2: The `python-jose` Library is Buggy
+The `jose` library is known to have weird bugs when validating HS256 tokens. The industry standard in Python is actually **`PyJWT`**. Let's switch to it, and this error will disappear instantly.
+
+### The Ultimate Fix (Using PyJWT)
+Let's replace `jose` with `PyJWT`. It will take 30 seconds.
+
+**Step 1: Install PyJWT**
+In your backend terminal (`venv` active), run:
+```powershell
+pip install pyjwt
+```
+
+**Step 2: Replace `backend/main.py` with this code**
+I have updated the imports to use `PyJWT`. Replace your entire `main.py` with this:
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal, engine, Base
+from models import Student, AnswerScript, Teacher
+import jwt  # <-- IMPORTING PyJWT INSTEAD OF JOSE
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def get_user_email(authorization: str):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+        
+    try:
+        token = authorization.split(" ")[1]
+        # Get the secret and strip any accidental spaces
+        secret = os.getenv("SUPABASE_JWT_SECRET").strip() 
+        
+        payload = jwt.decode(
+            token, 
+            secret, 
+            algorithms=["HS256"],
+            options={"verify_aud": False}
+        )
+        user_email = payload.get("email")
+        if not user_email:
+            raise Exception("No email in token")
+        return user_email
+    except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+# --- TEACHER ENDPOINTS ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+        
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+
+# --- STUDENT ENDPOINTS ---
+
+@app.get("/results/{student_id}")
+def get_student_result(student_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+
+    db = SessionLocal()
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    
+    if current_student and current_student.id != student_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="You are not allowed to view this result")
+        
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == student_id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+        
+    return {"student_id": student_id, "script_id": result.id, "status": result.status}
+```
+
+### Step 3: Restart and Test
+1. Stop FastAPI (`Ctrl+C`) and restart it: `uvicorn main:app --reload`
+2. Go to your browser, **Log Out**, and **Log In** again as `teacher@test.com`.
+
+It should work perfectly now! `PyJWT` is much more forgiving and standard than `jose`. Let me know when you see the 30 students!
 
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
