@@ -6273,6 +6273,50 @@ The terminal will now print exactly what is wrong. It will either say:
 *   Or it will print the decoded payload successfully.
 
 Copy and paste the `DEBUG` output from your terminal here if it's still failing!
+# output after writing the debugging code
+frontend
+<img width="1262" height="387" alt="image" src="https://github.com/user-attachments/assets/07c197f5-bbdd-46a2-802f-067c45ad7b09" />
+Its just a warning u can ignore this
+
+backend
+<img width="916" height="637" alt="image" src="https://github.com/user-attachments/assets/709afd6f-5016-414d-a05a-23ef8b08805a" />
+
+The debug print is a massive success! It tells us exactly what is wrong. 
+
+Look at this line in your terminal:
+`DEBUG ERROR: Token validation failed. Reason: The specified alg value is not allowed`
+
+### What does this mean?
+Your frontend is sending a perfectly valid token (it starts with `eyJhbGciOiJIUzI1NiIs...`, which means it uses the `HS256` algorithm). 
+But your backend's `python-jose` library is rejecting it. Why? 
+
+Because the **Secret Key** in your `.env` file is likely the wrong format. If you look at the debug output, your secret starts with `JYtjwiJYX5...`. Supabase's Legacy JWT Secret is usually a much longer string (often starting with `eyJ...`). 
+
+If you accidentally copied an API key, a public key, or a truncated string, `jose` gets confused and throws this exact "alg value is not allowed" error.
+
+### How to fix it in 2 minutes:
+
+**Step 1: Get the correct Secret**
+1. Go to **Supabase Dashboard**.
+2. Click **Project Settings** (gear icon) -> **API**.
+3. Scroll down to **JWT Settings**.
+4. Click **Reveal** next to **Legacy JWT Secret**. 
+5. Copy that entire long string. (It usually starts with `eyJ...`).
+
+**Step 2: Update `.env`**
+Open `backend/.env` and paste the new secret:
+```env
+SUPABASE_JWT_SECRET=your_new_long_secret_here
+```
+
+**Step 3: Restart everything**
+1. Stop FastAPI (`Ctrl+C`).
+2. Start it again (`uvicorn main:app --reload`).
+3. Go to your frontend, **Log Out**, and **Log In** again.
+
+Once the secret is correct, the debug terminal will print `DEBUG: Successfully decoded payload: {...}` and the dashboard will load the 30 students!
+
+Let me know when you see the success message!
 
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
