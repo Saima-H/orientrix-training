@@ -5895,21 +5895,46 @@ python seed_data.py
 Now it will successfully populate the database with all 30 students and their marks. After it finishes, go back to `http://localhost:3000/dashboard` and refresh. You will finally see the full list of students!
 
 # even after running the seed_data.py successfully it still says no scripts and the one isssue is still prevalent
-I know exactly how frustrating this is. You did the right thing, the script ran successfully, but the UI is still empty. 
+Here is the complete, combined message. It contains the full frontend code with the error alerts, and the step-by-step guide to figure out exactly what is blocking your data.
 
-This means the database *does* have the data, but the communication between your Frontend, Backend, and Database is breaking down somewhere. 
+### Step 1: Replace your entire `frontend/app/dashboard/page.tsx`
+Open `frontend/app/dashboard/page.tsx` in VS Code, delete everything, and paste this exact code. 
 
-Let's stop guessing and find out exactly what the error is. The "1 Issue" badge in the bottom left of Next.js is actually trying to tell us what's wrong.
-
-### Step 1: Find the exact error
-Right now, your frontend code has this line:
-`console.error("API Error:", errorData.detail);`
-
-Let's change it so it actually shows the error on the screen. Open `frontend/app/dashboard/page.tsx` and look at your `fetchScripts` function. 
-
-Change it to this (I added an `alert` so you can see the error without opening DevTools):
+*(I have added `alert()` popups so the app will literally tell you what is wrong instead of hiding it).*
 
 ```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function TeacherDashboard() {
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Route Guard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/");
+        return;
+      }
+      if (!session.user.email?.includes("teacher")) {
+        router.push("/student");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // Fetch Data with Error Alerts
   const fetchScripts = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -5924,37 +5949,115 @@ Change it to this (I added an `alert` so you can see the error without opening D
       });
       
       if (res.ok) {
-        setScripts(await res.json());
+        const data = await res.json();
+        setScripts(data);
       } else {
         const errorData = await res.json();
-        alert("API Error: " + errorData.detail); // <-- SHOWS THE ERROR ON SCREEN
+        // THIS WILL SHOW THE ERROR ON SCREEN
+        alert("API ERROR: " + errorData.detail); 
       }
     } catch (error) {
-      alert("Network Error: " + error);
+      alert("NETWORK ERROR: Is your FastAPI server running?");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchScripts();
+  }, []);
+
+  const handlePublish = async (scriptId: number) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    await fetch(`http://127.0.0.1:8000/publish/${scriptId}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${session.access_token}` }
+    });
+    fetchScripts(); 
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-400">👩‍🏫 Teacher Dashboard</h1>
+        <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Log Out</button>
+      </div>
+      
+      <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Class Answer Scripts</h2>
+        
+        {scripts.length === 0 ? (
+          <p className="text-gray-400">No scripts found. (Did you run seed_data.py?)</p>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-600 text-gray-300">
+                <th className="p-3">Script ID</th>
+                <th className="p-3">Student Name</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scripts.map((script) => (
+                <tr key={script.id} className="border-b border-gray-700 hover:bg-gray-750">
+                  <td className="p-3">{script.id}</td>
+                  <td className="p-3">{script.student_name}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-sm font-semibold ${script.status === 'Published' ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'}`}>
+                      {script.status}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {script.status !== "Published" && (
+                      <button 
+                        onClick={() => handlePublish(script.id)} 
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm transition"
+                      >
+                        Publish
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
 ```
 
-### Step 2: Refresh the page and see what pops up
-Save the file and refresh your Teacher Dashboard. You should get a popup. 
+### Step 2: Refresh the page and read the popup
+Save the file. Go back to `http://localhost:3000/dashboard` and refresh (F5). 
 
-Here is what the popup means:
-1.  **"Invalid Token"**: This means your backend `SUPABASE_JWT_SECRET` in `.env` is wrong, or you need to log out and log back in to get a fresh token.
-2.  **"Access Denied: You are not a registered teacher."**: This means `teacher@test.com` is NOT in your `teachers` table in Supabase. Go to Supabase -> Table Editor -> `teachers` and add it manually right now.
-3.  **"Network Error"**: This means FastAPI is not running. Go to your backend terminal and run `uvicorn main:app --reload`.
+A popup will appear. Here is exactly what it means and how to fix it:
 
-### Step 3: Check the `teachers` table (Most Likely)
-Because we added the `teachers` table recently, your backend is checking it. If `teacher@test.com` isn't in there, FastAPI returns a `403 Forbidden`.
-1. Go to Supabase -> **Table Editor** -> **`teachers`**.
-2. Is `teacher@test.com` there? 
-3. If not, run this in the SQL Editor:
-```sql
-INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');
-```
+1. **"API ERROR: Invalid Token"**
+   * *Reason:* Your JWT token is expired, or your backend `.env` file is missing `SUPABASE_JWT_SECRET`.
+   * *Fix:* Log out and log back in. Check `backend/.env` and restart `uvicorn main:app --reload`.
 
-Tell me exactly what the popup says. Once we know the exact error, we can fix it in 10 seconds.
+2. **"API ERROR: Access Denied: You are not a registered teacher."**
+   * *Reason:* Your backend checks the `teachers` table. `teacher@test.com` is not in it.
+   * *Fix:* Go to Supabase -> SQL Editor and run: `INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');` then refresh the page.
+
+3. **"NETWORK ERROR: Is your FastAPI server running?"**
+   * *Reason:* FastAPI crashed or isn't running.
+   * *Fix:* Look at your FastAPI terminal. Is there a red error? Restart it with `uvicorn main:app --reload`.
+
+4. **No popup, but still empty?**
+   * *Reason:* The database is actually empty.
+   * *Fix:* Go to your `backend` terminal (make sure `(venv)` is active) and run `python seed_data.py`. Then go to Supabase -> Table Editor -> `answer_scripts` and make sure there are 30 rows.
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
