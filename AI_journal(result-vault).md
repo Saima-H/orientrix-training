@@ -6467,6 +6467,149 @@ def get_student_result(student_id: int, authorization: str = Header(None)):
 
 It should work perfectly now! `PyJWT` is much more forgiving and standard than `jose`. Let me know when you see the 30 students!
 
+# still getting the same output
+<img width="753" height="617" alt="image" src="https://github.com/user-attachments/assets/18679ff8-77cc-45e0-9d3d-063cd5411fc1" />
+
+Here is the complete message with the full backend code. 
+
+You are doing everything right. Supabase silently migrated your project's security to a new algorithm (ES256) 18 days ago, which is why the old Legacy Secret stopped working. 
+
+To fix this permanently and securely, we use `PyJWKClient`. It automatically fetches the new public keys from Supabase and verifies the token properly.
+
+### Step 1: Install necessary libraries
+Because we are now verifying modern cryptographic keys, we need two packages. In your backend terminal (with `venv` active), run:
+```powershell
+pip install pyjwt cryptography
+```
+
+### Step 2: Replace `backend/main.py` with this code
+Delete everything in your current `main.py` and paste this exact code:
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal, engine, Base
+from models import Student, AnswerScript, Teacher
+import jwt
+from jwt import PyJWKClient
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# This is the public URL where Supabase hosts the keys to verify tokens
+JWKS_URL = "https://kcphopjpvtrllckyjnfd.supabase.co/auth/v1/.well-known/jwks.json"
+jwks_client = PyJWKClient(JWKS_URL)
+
+def get_user_email(authorization: str):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+        
+    try:
+        token = authorization.split(" ")[1]
+        
+        # Fetch the correct public key for this token and verify the signature
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token, 
+            signing_key.key, 
+            algorithms=["ES256", "RS256"], # Allow the new algorithms
+            options={"verify_aud": False}
+        )
+        
+        user_email = payload.get("email")
+        if not user_email:
+            raise Exception("No email in token")
+        return user_email
+    except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+# --- TEACHER ENDPOINTS ---
+
+@app.get("/all-scripts")
+def get_all_scripts(authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+    
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+        
+    scripts = db.query(AnswerScript).all()
+    result = []
+    for s in scripts:
+        student = db.query(Student).filter(Student.id == s.student_id).first()
+        result.append({
+            "id": s.id,
+            "student_name": student.name if student else "Unknown",
+            "student_id": s.student_id,
+            "status": s.status
+        })
+    db.close()
+    return result
+
+@app.put("/publish/{script_id}")
+def publish_script(script_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+        
+    db = SessionLocal()
+    teacher = db.query(Teacher).filter(Teacher.email == user_email).first()
+    if not teacher:
+        db.close()
+        raise HTTPException(status_code=403, detail="Access Denied: You are not a registered teacher.")
+
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        db.close()
+        raise HTTPException(status_code=404, detail="Script not found")
+        
+    script.status = "Published"
+    db.commit()
+    db.close()
+    return {"message": "Published successfully"}
+
+# --- STUDENT ENDPOINTS ---
+
+@app.get("/results/{student_id}")
+def get_student_result(student_id: int, authorization: str = Header(None)):
+    user_email = get_user_email(authorization)
+
+    db = SessionLocal()
+    current_student = db.query(Student).filter(Student.email == user_email).first()
+    
+    if current_student and current_student.id != student_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="You are not allowed to view this result")
+        
+    result = db.query(AnswerScript).filter(AnswerScript.student_id == student_id).first()
+    db.close()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Result not found")
+        
+    return {"student_id": student_id, "script_id": result.id, "status": result.status}
+```
+
+### Step 3: Restart and Test
+1. Go to your FastAPI terminal, stop the server (`Ctrl + C`), and start it again: `uvicorn main:app --reload`
+2. Go to `http://localhost:3000`, **Log Out**, and **Log In** as `teacher@test.com`.
+
+This time, the backend will securely fetch the new Supabase keys, verify your token successfully, and the 30 students will finally populate the dashboard. Let me know when it works!
+
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
