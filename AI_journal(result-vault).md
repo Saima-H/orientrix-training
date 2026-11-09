@@ -5687,10 +5687,111 @@ python seed_data.py
 
 This will generate a fresh JWT token, and your dashboard should populate with the 30 students!
 
+# after running seed.py also i was getting errors
+I see exactly what happened. This is a classic database auto-increment issue.
+
+### The Error Explained
+Look at the error: `Key (question_id)=(1) is not present in table "questions".`
+
+Here is the exact sequence that caused it:
+1. You ran `seed_data.py` previously, so the database created Questions with IDs `1, 2, 3, 4, 5`.
+2. You ran it again today. The script deleted the old data, but Postgres **does not reset the auto-increment counter**. So the new questions got IDs `6, 7, 8, 9, 10`.
+3. However, the `seed_data.py` script I gave you had a hardcoded loop: `for q_id in range(1, 6):`. It was trying to save marks for Question ID `1`, which no longer exists!
+
+Let's fix this properly so it uses the actual generated IDs.
+
+### Step 1: Replace `backend/seed_data.py`
+Open your `backend/seed_data.py` and replace it with this fixed version:
+
+```python
+from database import SessionLocal
+from models import Student, Paper, Question, AnswerScript, QuestionMark
+import random
+
+def seed_database():
+    db = SessionLocal()
+    
+    print("Deleting old data...")
+    db.query(QuestionMark).delete()
+    db.query(AnswerScript).delete()
+    db.query(Question).delete()
+    db.query(Paper).delete()
+    db.query(Student).delete()
+    db.commit()
+
+    print("Inserting 30 students...")
+    students = []
+    for section in ['A', 'B', 'C']:
+        for i in range(1, 11):
+            student = Student(
+                name=f'Student_{section}_{i}',
+                email=f'student{i}@test.com', # Added email for testing RLS
+                roll_number=i,
+                class_name='10',
+                section=section,
+                admission_number=f'ADM_{section}_{i}'
+            )
+            students.append(student)
+    db.add_all(students)
+    db.commit()
+
+    print("Inserting Papers and Questions...")
+    math_paper = Paper(name='Math Midterm', total_max_marks=100)
+    science_paper = Paper(name='Science Final', total_max_marks=100)
+    db.add_all([math_paper, science_paper])
+    db.commit()
+
+    # Questions for Math (Paper 1)
+    math_questions = []
+    for i in range(1, 6):
+        q = Question(paper_id=math_paper.id, question_number=i, max_marks=20, choice_group=None)
+        math_questions.append(q)
+        db.add(q)
+        
+    # Questions for Science (Paper 2)
+    science_questions = []
+    science_questions.append(Question(paper_id=science_paper.id, question_number=1, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=2, max_marks=25, choice_group='Group A'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=3, max_marks=25, choice_group='Group B'))
+    science_questions.append(Question(paper_id=science_paper.id, question_number=4, max_marks=25, choice_group='Group B'))
+    for q in science_questions:
+        db.add(q)
+        
+    db.commit() # Commit so we get the actual generated Question IDs
+
+    print("Creating Scripts and Assigning Marks...")
+    for student in students:
+        script = AnswerScript(paper_id=math_paper.id, student_id=student.id)
+        db.add(script)
+        db.commit() # Commit to get the actual generated Script ID
+
+        # Add random marks using the ACTUAL question IDs we just created
+        for q in math_questions:
+            mark = random.randint(5, 20)
+            qm = QuestionMark(script_id=script.id, question_id=q.id, marks_obtained=mark)
+            db.add(qm)
+    
+    db.commit()
+    db.close()
+    print("Database seeded successfully!")
+
+if __name__ == "__main__":
+    seed_database()
+```
+
+### Step 2: Run the fixed script
+In your backend terminal, run it again:
+```powershell
+python seed_data.py
+```
+
+### Step 3: Refresh the Dashboard
+1. Go back to `http://localhost:3000/dashboard`.
+2. Because we added the email to the students in this new script, don't forget to log in as `teacher@test.com`.
+3. You should now see all 30 students populated in the table, and the "Publish" buttons should be working!
 
 
-
-# if i apply 
+# step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
 This step proves to the reviewer that your security works in a real browser, not just in Swagger or the SQL Editor.
