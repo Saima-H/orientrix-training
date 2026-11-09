@@ -5894,7 +5894,67 @@ python seed_data.py
 
 Now it will successfully populate the database with all 30 students and their marks. After it finishes, go back to `http://localhost:3000/dashboard` and refresh. You will finally see the full list of students!
 
+# even after running the seed_data.py successfully it still says no scripts and the one isssue is still prevalent
+I know exactly how frustrating this is. You did the right thing, the script ran successfully, but the UI is still empty. 
 
+This means the database *does* have the data, but the communication between your Frontend, Backend, and Database is breaking down somewhere. 
+
+Let's stop guessing and find out exactly what the error is. The "1 Issue" badge in the bottom left of Next.js is actually trying to tell us what's wrong.
+
+### Step 1: Find the exact error
+Right now, your frontend code has this line:
+`console.error("API Error:", errorData.detail);`
+
+Let's change it so it actually shows the error on the screen. Open `frontend/app/dashboard/page.tsx` and look at your `fetchScripts` function. 
+
+Change it to this (I added an `alert` so you can see the error without opening DevTools):
+
+```tsx
+  const fetchScripts = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/all-scripts", {
+        headers: { "Authorization": `Bearer ${session.access_token}` }
+      });
+      
+      if (res.ok) {
+        setScripts(await res.json());
+      } else {
+        const errorData = await res.json();
+        alert("API Error: " + errorData.detail); // <-- SHOWS THE ERROR ON SCREEN
+      }
+    } catch (error) {
+      alert("Network Error: " + error);
+    } finally {
+      setLoading(false);
+    }
+  };
+```
+
+### Step 2: Refresh the page and see what pops up
+Save the file and refresh your Teacher Dashboard. You should get a popup. 
+
+Here is what the popup means:
+1.  **"Invalid Token"**: This means your backend `SUPABASE_JWT_SECRET` in `.env` is wrong, or you need to log out and log back in to get a fresh token.
+2.  **"Access Denied: You are not a registered teacher."**: This means `teacher@test.com` is NOT in your `teachers` table in Supabase. Go to Supabase -> Table Editor -> `teachers` and add it manually right now.
+3.  **"Network Error"**: This means FastAPI is not running. Go to your backend terminal and run `uvicorn main:app --reload`.
+
+### Step 3: Check the `teachers` table (Most Likely)
+Because we added the `teachers` table recently, your backend is checking it. If `teacher@test.com` isn't in there, FastAPI returns a `403 Forbidden`.
+1. Go to Supabase -> **Table Editor** -> **`teachers`**.
+2. Is `teacher@test.com` there? 
+3. If not, run this in the SQL Editor:
+```sql
+INSERT INTO teachers (name, email) VALUES ('Mr. Smith', 'teacher@test.com');
+```
+
+Tell me exactly what the popup says. Once we know the exact error, we can fix it in 10 seconds.
 # step 8
 Here is the complete, start-to-finish guide for **Step 8: Playwright E2E Tests**. 
 
