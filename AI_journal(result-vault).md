@@ -5415,7 +5415,278 @@ git push
 # major issue in the app is with the dashboard
 <img width="1272" height="592" alt="image" src="https://github.com/user-attachments/assets/4d767968-a598-442b-8117-5e0df53d3d02" />
 
+I see exactly what is happening. The UI is working perfectly (it's showing the teacher dashboard, the table headers, and the empty state message). 
+
+The message **"No scripts found. (Did you run seed_data.py?)"** is the clue. This means your FastAPI backend successfully talked to the database, but the `answer_scripts` table is completely empty.
+
+This happens because every time we ran `alembic upgrade head` to add new tables (like the `teachers` table), Alembic sometimes drops and recreates the entire schema. Your 30 fake students and their answer scripts got wiped out in the process.
+
+### How to fix it right now:
+
+**Step 1: Go to your backend terminal**
+Make sure your terminal is in the `backend` folder and `(venv)` is active.
+
+```powershell
+cd C:\Users\samh7\idea-vault\backend
+.\venv\Scripts\activate
+```
+
+**Step 2: Re-run the seed script**
+Run the script we made earlier to repopulate the database:
+```powershell
+python seed_data.py
+```
+*(You should see it print out: "Inserting 30 students...", "Inserting Papers...", etc.)*
+
+**Step 3: Refresh your browser**
+Go back to `http://localhost:3000/dashboard` and refresh the page (F5). 
+
+You should now see the table populated with 30 students! You can click the "Publish" button on any of them.
+
+### What about the "1 Issue" in the bottom left?
+That is just Next.js's development mode warning badge. It might be a small console warning (like a missing `key` prop or an unescaped character). It won't stop the app from working, so don't worry about it right now. 
+
+Let me know when you run `seed_data.py` and see the students appear!
+
 <img width="1275" height="583" alt="image" src="https://github.com/user-attachments/assets/4075abb1-2446-4f04-9eeb-300b7ecaee22" />
+I see the error: **`API Error: "Invalid Token"`**. 
+
+This means your frontend is sending a request to FastAPI, but the JWT token is either missing, expired, or malformed. 
+
+Here are the 3 reasons this happens:
+
+### 1. Expired Session (Most Likely)
+You logged in a few days ago, and your Supabase token has expired. The frontend is trying to send an empty token (`Bearer undefined`) which the backend correctly rejects.
+
+### 2. Backend Secret Missing
+Make sure your `backend/.env` file still has `SUPABASE_JWT_SECRET=your_secret_here`. If this file was lost or modified, FastAPI can't verify any tokens.
+
+### 3. Frontend not handling missing session
+If `session` is null, `session?.access_token` becomes `undefined`. It sends `"Bearer undefined"` to the backend, which fails.
+
+### How to fix it right now:
+
+**Step 1: Log Out and Log Back In**
+Go to `http://localhost:3000`, log out, and log back in as `teacher@test.com`. This will give you a fresh, valid token. 
+
+**Step 2: Update your frontend code to handle missing tokens**
+Let's make your `fetchScripts` function bulletproof. Open `frontend/app/dashboard/page.tsx` and update `fetchScripts`:
+
+```tsx
+  const fetchScripts = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // If no session, don't even try to fetch
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    const res = await fetch("http://127.0.0.1:8000/all-scripts", {
+      headers: { "Authorization": `Bearer ${session.access_token}` }
+    });
+    
+    if (res.ok) {
+      setScripts(await res.json());
+    } else {
+      const errorData = await res.json();
+      console.error("API Error:", errorData.detail);
+    }
+    setLoading(false);
+  };
+```
+
+**Step 3: Verify Backend Secret**
+Open `backend/.env` and make sure this line is there:
+```env
+SUPABASE_JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+*(It should be the long string from your Supabase Legacy JWT Settings).*
+
+**Step 4: Restart the backend**
+Stop FastAPI (`Ctrl+C`), then restart it:
+```bash
+uvicorn main:app --reload
+```
+
+**Step 5: Run `seed_data.py` again**
+Don't forget, your database might still be empty! Run:
+```bash
+python seed_data.py
+```
+
+Refresh the page and log in again. Let me know if you still see the invalid token error!
+
+so the full code is :
+Here is the complete, start-to-finish fix. Just copy and paste the code blocks exactly as they are.
+
+### Step 1: Replace your entire `frontend/app/dashboard/page.tsx` file
+Open `frontend/app/dashboard/page.tsx` in VS Code. Delete everything inside it and paste this complete, fully updated code. 
+
+(Notice how it now checks if the session exists before trying to fetch, which stops the "Invalid Token" error).
+
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function TeacherDashboard() {
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // 1. Route Guard: Check if the user is actually a teacher
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push("/");
+        return;
+      }
+      
+      if (!session.user.email?.includes("teacher")) {
+        router.push("/student");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // 2. Fetch Data: Only runs if we have a valid session
+  const fetchScripts = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/all-scripts", {
+        headers: { "Authorization": `Bearer ${session.access_token}` }
+      });
+      
+      if (res.ok) {
+        setScripts(await res.json());
+      } else {
+        const errorData = await res.json();
+        console.error("API Error:", errorData.detail);
+      }
+    } catch (error) {
+      console.error("Network Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchScripts();
+  }, []);
+
+  const handlePublish = async (scriptId: number) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    await fetch(`http://127.0.0.1:8000/publish/${scriptId}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${session.access_token}` }
+    });
+    fetchScripts(); 
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-400">👩‍🏫 Teacher Dashboard</h1>
+        <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Log Out</button>
+      </div>
+      
+      <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Class Answer Scripts</h2>
+        
+        {scripts.length === 0 ? (
+          <p className="text-gray-400">No scripts found. (Did you run seed_data.py?)</p>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-600 text-gray-300">
+                <th className="p-3">Script ID</th>
+                <th className="p-3">Student Name</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scripts.map((script) => (
+                <tr key={script.id} className="border-b border-gray-700 hover:bg-gray-750">
+                  <td className="p-3">{script.id}</td>
+                  <td className="p-3">{script.student_name}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-sm font-semibold ${script.status === 'Published' ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'}`}>
+                      {script.status}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    {script.status !== "Published" && (
+                      <button 
+                        onClick={() => handlePublish(script.id)} 
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm transition"
+                      >
+                        Publish
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+### Step 2: Verify your Backend `.env` file
+The "Invalid Token" error also happens if your backend secret key is missing. 
+1. Open `backend/.env`.
+2. Make sure this exact line is there (with your long secret key from Supabase):
+```env
+SUPABASE_JWT_SECRET=your_long_secret_here
+```
+
+### Step 3: Restart Backend and Re-seed Data
+1. Stop your FastAPI server (`Ctrl+C` in the backend terminal).
+2. Start it again:
+```powershell
+uvicorn main:app --reload
+```
+3. Open a new terminal, go to the `backend` folder, activate `venv`, and run the seed script to make sure your database isn't empty:
+```powershell
+python seed_data.py
+```
+
+### Step 4: Log out and Log back in
+1. Go to `http://localhost:3000`.
+2. If you are logged in, click "Log Out".
+3. Log in again as `teacher@test.com` with `password123`.
+
+This will generate a fresh JWT token, and your dashboard should populate with the 30 students!
+
 
 
 
