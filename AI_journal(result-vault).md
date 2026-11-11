@@ -7744,6 +7744,11 @@ pytest test_main.py test_marking_engine.py -v
 ```
 *(You should see all tests pass now!)*
 
+# error
+
+<img width="1274" height="101" alt="image" src="https://github.com/user-attachments/assets/549f5de6-611f-45c7-bd0a-65b8839e6097" />
+
+
 Once they pass, run:
 ```powershell
 cd ..
