@@ -7663,6 +7663,96 @@ pytest test_marking_engine.py test_main.py -v
 ```
 *(You should see 33+ passed, and the hack test failing with 401).*
 
+<img width="1272" height="120" alt="image" src="https://github.com/user-attachments/assets/507fa14f-da71-4741-960b-b5d533b7a105" />
+
+This is a **perfect** failure. It tells me exactly what is going on. 
+
+Look at the error: `assert 404 == 401` or `assert 404 == 200`. 
+**404 means "Not Found".** 
+
+### Why is this happening?
+Your `test_main.py` file contains the old tests for the Idea Vault (`/ideas` endpoint). But when we transitioned to the Results Vault, we **deleted the `/ideas` endpoint** from `main.py`. 
+
+So when pytest tries to hit `/ideas`, FastAPI says: *"I have no idea what you're talking about, that route doesn't exist (404)."*
+
+### The Fix
+We need to update `test_main.py` to test the new Results Vault endpoints (`/all-scripts` and `/results/{id}`). 
+
+Open `backend/test_main.py`, delete everything, and paste this updated test suite:
+
+```python
+from fastapi.testclient import TestClient
+from main import app
+import os
+import jwt
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+client = TestClient(app)
+
+# Generate REAL tokens using your Supabase Secret
+SECRET_KEY = os.getenv("SUPABASE_JWT_SECRET")
+
+def create_test_token(email: str):
+    payload = {
+        "email": email,
+        "aud": "authenticated",
+        "exp": datetime.utcnow() + timedelta(hours=1)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+SAIMA_TOKEN = f"Bearer {create_test_token('saima@test.com')}"
+ALEX_TOKEN = f"Bearer {create_test_token('alex@test.com')}"
+TEACHER_TOKEN = f"Bearer {create_test_token('teacher@test.com')}"
+
+# 1. Test that unauthenticated users are blocked
+def test_get_all_scripts_requires_auth():
+    response = client.get("/all-scripts")
+    assert response.status_code == 401
+
+# 2. Test that a student cannot hit the teacher endpoint
+def test_student_cannot_access_teacher_endpoint():
+    response = client.get("/all-scripts", headers={"Authorization": SAIMA_TOKEN})
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Access Denied: You are not a registered teacher."
+
+# 3. Test that a teacher CAN hit the teacher endpoint (Assuming teacher@test.com is in DB)
+def test_teacher_can_access_all_scripts():
+    response = client.get("/all-scripts", headers={"Authorization": TEACHER_TOKEN})
+    assert response.status_code == 200
+
+# 4. Test that a student cannot view another student's result
+def test_student_cannot_view_other_result():
+    # Saima trying to view Alex's result (Alex is student 2 in this scenario)
+    response = client.get("/results/2", headers={"Authorization": SAIMA_TOKEN})
+    assert response.status_code == 403
+    assert response.json()["detail"] == "You are not allowed to view this result"
+
+# 5. Test invalid token
+def test_invalid_token():
+    response = client.get("/all-scripts", headers={"Authorization": "Bearer fake_token"})
+    assert response.status_code == 401
+```
+
+### What about `test_hack.py`?
+You also have `test_hack.py`. Since the `/ideas` route is gone, that test will also fail with a `404`. You can just **delete `test_hack.py`** because we already proved the JWT vulnerability is fixed (and Playwright covers the new security). 
+
+### Run the tests again:
+```powershell
+pytest test_main.py test_marking_engine.py -v
+```
+*(You should see all tests pass now!)*
+
+Once they pass, run:
+```powershell
+cd ..
+git add .
+git commit -m "Updated backend tests for Results Vault endpoints"
+git push
+```
+
+
 **2. Push the main repo (`idea-vault`):**
 ```powershell
 cd C:\Users\samh7\idea-vault
