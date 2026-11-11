@@ -496,3 +496,138 @@ psycopg[binary]
 python-jose[cryptography]
 ```
 *   A list of every Python package you installed. Anyone who downloads your repo can run `pip install -r requirements.txt` and instantly get all the dependencies.
+
+  # RESULT-VAULT
+  Here is the ultimate crash course for the Results Vault. We will go through it in three iterations, starting from the bird's-eye view and ending with the deep-dive enterprise security details. 
+
+---
+
+# 🎓 THE RESULTS VAULT CRASH COURSE
+
+## 🟢 Iteration 1: Basic (The Bird's-Eye View)
+**What is it?** 
+A web application that allows teachers to upload and publish exam marks, and students to securely view their own results. 
+
+**The Core Stack:**
+*   **Frontend (Next.js):** What the user sees and clicks.
+*   **Backend (FastAPI):** The brain that processes requests and does math.
+*   **Database (Supabase/PostgreSQL):** The vault where all the data is stored.
+
+**The Basic Flow:**
+1. A user logs in.
+2. The system checks if they are a Teacher or a Student.
+3. Teachers see a grading dashboard. Students see a personal results portal.
+
+```mermaid
+flowchart LR
+    User([👤 User]) -->|Logs in| Frontend["Next.js Frontend"]
+    Frontend -->|API Requests| Backend["FastAPI Backend"]
+    Backend -->|Read/Write| Database[("Supabase PostgreSQL")]
+```
+
+---
+
+## 🟡 Iteration 2: Medium (The Mechanics & Logic)
+Now, let's zoom in on how the backend actually works. This app isn't just a simple CRUD app; it has heavy business logic.
+
+**The Database Schema (Relational):**
+We don't just store "marks". We use a 5-table relational schema:
+1.  **Students**: Holds names, emails, and sections.
+2.  **Papers**: The exam itself (e.g., Math Midterm).
+3.  **Questions**: The individual questions and their max marks.
+4.  **Answer Scripts**: The physical paper submitted by a student.
+5.  **Question Marks**: The specific score for each question.
+
+**The Backend Logic:**
+*   **The Marking Engine:** A pure Python module. It handles the complicated math: rounding to the nearest 0.5 (without floating-point errors), calculating the "best 2 out of 4" questions, and applying grace marks.
+*   **The Fuzzy Matcher:** Teachers upload messy handwritten names. The algorithm uses `difflib` to compare the messy name against the database. It only suggests a match if *both* the name similarity is high AND the roll number matches exactly.
+
+**Security (RBAC):**
+Role-Based Access Control. The backend checks the database `teachers` table. If a student tries to hit the `/publish` endpoint, they get a `403 Forbidden`.
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        RBAC{"RBAC Check<br/>(Are you a Teacher?)"}
+        Engine["Marking Engine<br/>(Decimal Math)"]
+        Matcher["Fuzzy Matcher<br/>(Name + Roll)"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        Relational[("Relational Tables<br/>(Students, Papers, Marks)")]
+    end
+
+    T_Dash -->|Publish/View All| RBAC
+    S_Dash -->|View Own| RBAC
+    RBAC -->|Teacher Only| Engine
+    RBAC -->|Teacher Only| Matcher
+    Engine --> Relational
+    Matcher --> Relational
+```
+
+---
+
+## 🔴 Iteration 3: Advanced (Security, Triggers, & RLS)
+This is the enterprise-level architecture. Here is where we deal with hackers, direct database access, and automated testing.
+
+**1. JWT Verification (The ES256 Trap):**
+Supabase migrated to asymmetric cryptography (ES256). The backend uses `PyJWKClient` to fetch Supabase's public keys to cryptographically verify the token's signature, expiry, and audience.
+
+**2. Defense in Depth (RLS vs Master Key):**
+FastAPI connects to the database using the "Master Key", which bypasses Row Level Security (RLS). 
+*   **Layer 1:** FastAPI RBAC filters the data in Python.
+*   **Layer 2 (RLS):** If a hacker bypasses FastAPI and talks directly to Supabase, RLS physically prevents a student from reading another student's rows.
+
+**3. Immutable Audit Logs:**
+If a teacher changes a mark, a PostgreSQL Trigger automatically logs it (who, when, old mark, new mark, reason). A secondary trigger physically prevents anyone (even the database admin) from deleting or modifying that log.
+
+**4. Testing (Pytest, Hypothesis, Playwright):**
+*   **Pytest:** Unit tests for the Marking Engine.
+*   **Hypothesis:** Property-based tests that throw random math at the engine to ensure it never exceeds bounds and is idempotent.
+*   **Playwright:** E2E browser tests that literally act as a hacker, changing the URL from `/results/1` to `/results/2`, and verifying the system blocks it.
+
+```mermaid
+flowchart TD
+    subgraph Frontend ["Next.js Frontend"]
+        T_Dash["Teacher Dashboard"]
+        S_Dash["Student Portal"]
+    end
+
+    subgraph Backend ["FastAPI Backend"]
+        Auth["JWT Verification<br/>(PyJWKClient ES256)"]
+        RBAC{"RBAC Check<br/>(Teacher vs Student)"}
+        Engine["Marking Engine"]
+    end
+
+    subgraph Database ["Supabase PostgreSQL"]
+        RLS{"Row Level Security<br/>(DB Firewall)"}
+        Relational[("Relational Tables")]
+        Audit[("Audit Logs<br/>(Immutable Triggers)")]
+    end
+
+    subgraph Testing ["Quality Assurance"]
+        Playwright["Playwright (E2E)<br/>URL Tampering"]:::highlight
+        Pytest["Pytest + Hypothesis<br/>Math & Logic"]:::highlight
+    end
+
+    T_Dash --> Auth
+    S_Dash --> Auth
+    Auth --> RBAC
+    RBAC --> Engine
+    RBAC -->|Master Key| RLS
+    RLS --> Relational
+    Relational -.->|On Update| Audit
+    
+    Playwright -.->|Tests Security| S_Dash
+    Pytest -.->|Tests Logic| Engine
+
+    classDef highlight fill:#2ecc71,color:#fff,stroke:#27ae60,stroke-width:2px;
+```
+
+### 💡 The Advanced Takeaway
+The Results Vault proves that building a real application is not just about connecting a form to a database. It requires **Defense in Depth**: secure token verification, database-level firewalls (RLS), immutable audit trails, and automated tests that proactively try to break the system before a hacker does.
