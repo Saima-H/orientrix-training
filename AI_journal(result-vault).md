@@ -7395,12 +7395,21 @@ npx playwright test results-vault.spec.ts --headed
 RESTARTED EVERYTHING AND IT WORKED!!!!!!!!!!!!!!
 
 <img width="1143" height="251" alt="image" src="https://github.com/user-attachments/assets/eac0017a-ba73-4d40-adce-41845f3725f5" />
+
+
+
+
+
+
+
+
+
 # FIXES
 Here is the complete message with all the fixes, full codes, and exactly *why* we are doing each one based on the Tech Lead's email. 
 
 You can copy and paste everything below directly into your files and terminal.
 
----
+
 
 ### Fix 1: Verify the "Audience" in JWT
 
